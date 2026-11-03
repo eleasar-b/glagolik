@@ -1,0 +1,25 @@
+# Applied on top of detekt's default config (buildUponDefaultConfig = true).
+# Only deviations from the defaults belong here, each with a reason.
+
+naming:
+  FunctionNaming:
+    # Composables returning Unit are PascalCase (Compose API guidelines)
+    ignoreAnnotated:
+      - Composable
+
+style:
+  MagicNumber:
+    # Color literals in the theme are design tokens, not magic numbers
+    ignorePropertyDeclaration: true
+  UnusedPrivateMember:
+    # @Preview functions are private and only used by tooling
+    ignoreAnnotated:
+      - Preview
+
+# Compose rules (io.nlopez.compose.rules) are active by default; only opt-ins listed here.
+Compose:
+  Material2:
+    # Material 3 only
+    active: true
+  UnstableCollections:
+    active: true
