@@ -54,6 +54,14 @@ jobs:
             exit 1
           fi
 
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: glagolik-debug-${{ github.event.pull_request.number && format('pr{0}', github.event.pull_request.number) || github.sha }}
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Upload reports on failure
         if: failure()
         uses: actions/upload-artifact@v7

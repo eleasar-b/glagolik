@@ -1,0 +1,108 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GLAGOLIK_KEYSTORE_PATH: ${{ github.workspace }}/../release.keystore
+      GLAGOLIK_KEYSTORE_PASSWORD: ${{ secrets.GLAGOLIK_KEYSTORE_PASSWORD }}
+      GLAGOLIK_KEY_ALIAS: ${{ secrets.GLAGOLIK_KEY_ALIAS }}
+      GLAGOLIK_KEY_PASSWORD: ${{ secrets.GLAGOLIK_KEY_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Derive version from tag
+        id: version
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if [[ ! "$tag" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "::error::Tag '$tag' is not of the form vMAJOR.MINOR.PATCH"
+            exit 1
+          fi
+          major=${BASH_REMATCH[1]}
+          minor=${BASH_REMATCH[2]}
+          patch=${BASH_REMATCH[3]}
+          if (( minor > 99 || patch > 99 )); then
+            echo "::error::minor and patch must be <= 99 (versionCode scheme)"
+            exit 1
+          fi
+          echo "name=${major}.${minor}.${patch}" >> "$GITHUB_OUTPUT"
+          echo "code=$(( major * 10000 + minor * 100 + patch ))" >> "$GITHUB_OUTPUT"
+
+      - name: Check signing secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.GLAGOLIK_KEYSTORE_BASE64 }}
+        run: |
+          missing=0
+          for name in KEYSTORE_BASE64 GLAGOLIK_KEYSTORE_PASSWORD GLAGOLIK_KEY_ALIAS GLAGOLIK_KEY_PASSWORD; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Secret for $name is not set"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: Decode keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.GLAGOLIK_KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE_BASE64" | base64 --decode > "$GLAGOLIK_KEYSTORE_PATH"
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Quality gates and signed release build
+        run: >
+          ./gradlew ktlintCheck detekt lintRelease testDebugUnitTest assembleRelease
+          -PversionName=${{ steps.version.outputs.name }}
+          -PversionCode=${{ steps.version.outputs.code }}
+
+      - name: Verify signature
+        run: |
+          apk=app/build/outputs/apk/release/app-release.apk
+          test -f "$apk"
+          apksigner=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)/apksigner
+          "$apksigner" verify --print-certs "$apk"
+
+      - name: Guardrail - no INTERNET permission
+        run: |
+          manifest=$(find app/build/intermediates -path '*release*' -name AndroidManifest.xml -path '*merged_manifest*' | head -n 1)
+          test -n "$manifest"
+          if grep -q 'android.permission.INTERNET' "$manifest"; then
+            echo "::error::INTERNET permission found in merged manifest ($manifest)"
+            exit 1
+          fi
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          out="glagolik-${GITHUB_REF_NAME}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$out"
+          sha256sum "$out" > "$out.sha256"
+          gh release create "$GITHUB_REF_NAME" "$out" "$out.sha256" \
+            --title "Glagolik ${GITHUB_REF_NAME}" \
+            --generate-notes
+
+      - name: Remove keystore
+        if: always()
+        run: rm -f "$GLAGOLIK_KEYSTORE_PATH"

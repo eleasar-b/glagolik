@@ -193,9 +193,12 @@ die **Compose API Guidelines**.
   3. lint
   4. Unit-Tests
   5. `assembleDebug`
-- **Release:**
-  - Tag `vX.Y.Z` erzeugt ein signiertes Release-APK.
-  - Der Keystore liegt als GitHub Secret vor.
+  Das Debug-APK wird als Artefakt hochgeladen (14 Tage).
+- **Release** (`.github/workflows/release.yml`):
+  - Tag `vX.Y.Z` erzeugt ein signiertes Release-APK als GitHub Release.
+  - `versionName` = Tag ohne `v`, `versionCode` = `MAJOR*10000 + MINOR*100 + PATCH`.
+  - Signing über die Secrets `GLAGOLIK_KEYSTORE_BASE64`, `GLAGOLIK_KEYSTORE_PASSWORD`,
+    `GLAGOLIK_KEY_ALIAS`, `GLAGOLIK_KEY_PASSWORD`. Ohne Secrets bricht der Release ab.
   - R8 ist im Release aktiv.
 
 ## 10. Arbeitsweise mit Claude
