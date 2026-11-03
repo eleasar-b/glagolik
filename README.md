@@ -14,7 +14,15 @@ Development guidelines: [CLAUDE.md](CLAUDE.md)
 - **Releases:** pushing a tag `vX.Y.Z` builds a signed release APK and publishes it as
   GitHub Release, together with a SHA-256 checksum.
 
-### One-time signing setup
+### Debug signing
+
+CI signs debug APKs with a shared debug keystore from the secret
+`GLAGOLIK_DEBUG_KEYSTORE_BASE64` (alias `androiddebugkey`, password `android`), so
+new debug builds install as updates. For identical signatures in local builds, place the
+same keystore at `~/.android/debug.keystore`. Without the secret, CI falls back to a
+random key.
+
+### One-time release signing setup
 
 ```sh
 keytool -genkeypair -v -keystore glagolik-release.keystore -alias glagolik \

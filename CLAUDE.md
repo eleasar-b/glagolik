@@ -193,7 +193,9 @@ die **Compose API Guidelines**.
   3. lint
   4. Unit-Tests
   5. `assembleDebug`
-  Das Debug-APK wird als Artefakt hochgeladen (14 Tage).
+  Das Debug-APK wird als Artefakt hochgeladen (14 Tage). Signiert wird es mit dem
+  gemeinsamen Debug-Keystore aus dem Secret `GLAGOLIK_DEBUG_KEYSTORE_BASE64`, damit
+  Updates ohne Deinstallation funktionieren.
 - **Release** (`.github/workflows/release.yml`):
   - Tag `vX.Y.Z` erzeugt ein signiertes Release-APK als GitHub Release.
   - `versionName` = Tag ohne `v`, `versionCode` = `MAJOR*10000 + MINOR*100 + PATCH`.
