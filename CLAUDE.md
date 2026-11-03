@@ -94,7 +94,14 @@ io/github/eleasarb/glagolik/
   - Es kommen nur kyrillische Zeichen vor (keine lateinischen Doppelgänger).
   - Aspektpartner verweisen auf existierende Einträge.
 - **Korrekturen:** Manuelle Korrekturen stehen in `data/overrides.csv`, nie
-  direkt in den Raw-Daten.
+  direkt in den Raw-Daten. Aktionen: `EXCLUDE` (Verb weglassen), `ALLOW_MISSING`
+  (Formen fehlen legitim, z. B. unpersönliche Verben), `SET` (Feld ersetzen, nur mit
+  geprüftem Wert). Jede Zeile braucht einen Grund.
+- **Aspektpartner ausserhalb der 600** werden als Referenzverben (`is_core = 0`)
+  mitgeliefert, damit die Verlinkung aufgeht. Ungültige Partner werden übersprungen
+  und in `data/import-report.md` gelistet.
+- **Ausführen:** `./gradlew :tools:importer:importVerbs` erzeugt `selection.csv`,
+  `import-report.md` und `verbs.db`. `verifyVerbs` prüft in der CI, dass alles aktuell ist.
 
 ## 6. Lernlogik
 
@@ -191,7 +198,7 @@ die **Compose API Guidelines**.
   1. ktlint
   2. detekt
   3. lint
-  4. Unit-Tests
+  4. Unit-Tests (App und Importer), danach `verifyVerbs`
   5. `assembleDebug`
   Das Debug-APK wird als Artefakt hochgeladen (14 Tage). Signiert wird es mit dem
   gemeinsamen Debug-Keystore aus dem Secret `GLAGOLIK_DEBUG_KEYSTORE_BASE64`, damit

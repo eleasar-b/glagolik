@@ -53,7 +53,10 @@ jobs:
         run: ./gradlew lintDebug
 
       - name: Unit tests
-        run: ./gradlew testDebugUnitTest
+        run: ./gradlew testDebugUnitTest :tools:importer:test
+
+      - name: Verb data up to date
+        run: ./gradlew :tools:importer:verifyVerbs
 
       - name: Assemble debug APK
         run: ./gradlew assembleDebug

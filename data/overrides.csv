@@ -1,0 +1,11 @@
+accented,aspect,action,fields,value,reason
+хоте'ться,imperfective,ALLOW_MISSING,imperative_sg;imperative_pl;past_m;past_f;past_pl;presfut_sg1;presfut_sg2;presfut_pl1;presfut_pl2;presfut_pl3,,impersonal verb: only 3rd person singular and neuter past exist (хочется / хотелось)
+пусть,perfective,EXCLUDE,,,not a verb (particle); source row has no forms
+установить,perfective,EXCLUDE,,,source has no stress mark on the infinitive; needs a reviewed correction
+вида'ть,imperfective,EXCLUDE,,,source has no present tense and no imperative; unclear whether defective or data gap
+звуча'ть,imperfective,EXCLUDE,,,source has no past tense and no imperative although both exist; needs a reviewed correction
+вы'дать,perfective,SET,past_n,вы'дало,second source variant 'вы'дало'' carries two stress marks; kept the first source variant unchanged
+сходи'ть,both,EXCLUDE,,,homograph mix-up in source (сходить pf. / impf.); present/future forms missing
+завести',perfective,EXCLUDE,,,several source forms lack stress marks; needs a reviewed correction
+дожда'ться,perfective,EXCLUDE,,,corrupt source forms (e.g. дождала'ётся); needs a reviewed correction
+захоте'ться,perfective,EXCLUDE,,,impersonal verb with missing stress marks in its only forms; needs a reviewed correction

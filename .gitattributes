@@ -1,0 +1,6 @@
+* text=auto eol=lf
+
+*.jar binary
+*.db binary
+# Large generated/raw data: keep it out of diffs, review selection.csv and the report instead
+data/raw/verbs.csv -diff

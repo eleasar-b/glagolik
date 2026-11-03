@@ -10,6 +10,8 @@ ktlintGradle = "14.2.0"
 ktlint = "1.8.0"
 detekt = "1.23.8"
 composeRules = "0.6.8"
+kotlinCsv = "1.10.0"
+sqliteJdbc = "3.54.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -24,9 +26,12 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 compose-rules-ktlint = { group = "io.nlopez.compose.rules", name = "ktlint", version.ref = "composeRules" }
 compose-rules-detekt = { group = "io.nlopez.compose.rules", name = "detekt", version.ref = "composeRules" }
+kotlin-csv = { group = "com.github.doyaaaaaken", name = "kotlin-csv-jvm", version.ref = "kotlinCsv" }
+sqlite-jdbc = { group = "org.xerial", name = "sqlite-jdbc", version.ref = "sqliteJdbc" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
