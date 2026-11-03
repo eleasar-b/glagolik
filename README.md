@@ -8,6 +8,40 @@ aspect and aspectual pairs, with spaced repetition per verb form.
 
 Development guidelines: [CLAUDE.md](CLAUDE.md)
 
+## Builds
+
+- **Pull requests / main:** CI uploads a debug APK as workflow artifact (`glagolik-debug-…`).
+- **Releases:** pushing a tag `vX.Y.Z` builds a signed release APK and publishes it as
+  GitHub Release, together with a SHA-256 checksum.
+
+### Debug signing
+
+CI signs debug APKs with a shared debug keystore from the secret
+`GLAGOLIK_DEBUG_KEYSTORE_BASE64` (alias `androiddebugkey`, password `android`), so
+new debug builds install as updates. For identical signatures in local builds, place the
+same keystore at `~/.android/debug.keystore`. Without the secret, CI falls back to a
+random key.
+
+### One-time release signing setup
+
+```sh
+keytool -genkeypair -v -keystore glagolik-release.keystore -alias glagolik \
+  -keyalg RSA -keysize 4096 -validity 10000
+base64 -w0 glagolik-release.keystore   # macOS: base64 -i glagolik-release.keystore
+```
+
+Add these repository secrets (Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+|--------|-------|
+| `GLAGOLIK_KEYSTORE_BASE64` | base64 output from above |
+| `GLAGOLIK_KEYSTORE_PASSWORD` | keystore password |
+| `GLAGOLIK_KEY_ALIAS` | `glagolik` |
+| `GLAGOLIK_KEY_PASSWORD` | key password (same as keystore password for PKCS12 keystores) |
+
+Keep the keystore file in a password manager. Losing it means updates can no longer be
+installed over existing installs.
+
 ## License
 
 Code: [Apache License 2.0](LICENSE). Data in `data/`: CC BY-SA 4.0.

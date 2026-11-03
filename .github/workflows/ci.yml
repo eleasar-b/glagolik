@@ -30,6 +30,19 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      # A fixed debug keystore keeps the signature stable across CI runs,
+      # so new debug APKs install as updates over older ones.
+      - name: Install shared debug keystore
+        env:
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.GLAGOLIK_DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          if [[ -z "$DEBUG_KEYSTORE_BASE64" ]]; then
+            echo "::warning::GLAGOLIK_DEBUG_KEYSTORE_BASE64 not set (e.g. fork PR); using a random debug key"
+            exit 0
+          fi
+          mkdir -p ~/.android
+          echo "$DEBUG_KEYSTORE_BASE64" | base64 --decode > ~/.android/debug.keystore
+
       - name: ktlint
         run: ./gradlew ktlintCheck
 
@@ -53,6 +66,14 @@ jobs:
             echo "::error::INTERNET permission found in merged manifest ($manifest)"
             exit 1
           fi
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: glagolik-debug-${{ github.event.pull_request.number && format('pr{0}', github.event.pull_request.number) || github.sha }}
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload reports on failure
         if: failure()

@@ -15,12 +15,30 @@ android {
         applicationId = "io.github.eleasarb.glagolik"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        // Release builds pass -PversionCode / -PversionName (derived from the Git tag).
+        versionCode = providers.gradleProperty("versionCode").map(String::toInt).getOrElse(1)
+        versionName = providers.gradleProperty("versionName").getOrElse("0.1.0-dev")
+    }
+
+    // Release signing comes from environment variables (GitHub Secrets in CI).
+    // Without them the release APK stays unsigned; nothing secret lives in the repo.
+    val releaseKeystorePath = providers.environmentVariable("GLAGOLIK_KEYSTORE_PATH").orNull
+    signingConfigs {
+        if (releaseKeystorePath != null) {
+            create("release") {
+                storeFile = file(releaseKeystorePath)
+                storePassword = providers.environmentVariable("GLAGOLIK_KEYSTORE_PASSWORD").get()
+                keyAlias = providers.environmentVariable("GLAGOLIK_KEY_ALIAS").get()
+                keyPassword = providers.environmentVariable("GLAGOLIK_KEY_PASSWORD").get()
+            }
+        }
     }
 
     buildTypes {
         release {
+            if (releaseKeystorePath != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
