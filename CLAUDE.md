@@ -49,9 +49,10 @@ Android-App zum Trainieren russischer Verbformen (Konjugation, Aspekt, Imperativ
 | DI            | Hilt (Abhängigkeit explizit freigegeben)              |
 | Audio         | Android `TextToSpeech` (ru-RU, offline)               |
 | Build         | Gradle Kotlin DSL, Version Catalog (`libs.versions.toml`) |
-| SDK           | `compileSdk`/`targetSdk` 36, `minSdk` 26 |
+| SDK           | `compileSdk`/`targetSdk` 37, `minSdk` 26              |
 
-`targetSdk` 36 entspricht der Play-Anforderung ab 31.08.2026 für neue Apps und Updates.
+`targetSdk` 37 ist das neueste stabile API-Level und liegt über der Play-Anforderung
+(mindestens 36 ab 31.08.2026 für neue Apps und Updates).
 
 ## 4. Architektur
 
