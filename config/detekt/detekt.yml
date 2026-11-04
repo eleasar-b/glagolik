@@ -11,6 +11,9 @@ complexity:
   LongParameterList:
     # Composables and test-data builders use defaulted parameters by design
     ignoreDefaultParameters: true
+    # Stateless screens take one callback per user action (UDF), see CLAUDE.md §7
+    ignoreAnnotated:
+      - Composable
 
 style:
   MagicNumber:

@@ -39,4 +39,41 @@
     <string name="about_data_text">Verb forms and translations are taken from the OpenRussian.org dictionary and licensed under CC BY-SA 4.0. Changes: selection of the most frequent verbs, normalised stress marks, excluded or corrected entries. The adapted data is distributed under the same license.</string>
     <string name="about_code_title">Source code</string>
     <string name="about_code_text">Glagolik is licensed under the Apache License 2.0.</string>
+    <string name="training_title">Training</string>
+    <!-- %1$d: current card, %2$d: cards in session -->
+    <string name="training_progress">%1$d / %2$d</string>
+    <string name="training_start">Start training</string>
+    <string name="training_close">Close training</string>
+    <string name="training_new_form">New form</string>
+    <!-- %1$s: Russian pronoun, the blank is the form to type -->
+    <string name="training_prompt">%1$s …</string>
+    <string name="training_answer_label">Your answer</string>
+    <string name="training_check">Check</string>
+    <string name="training_continue">Continue</string>
+    <string name="training_easy">Easy</string>
+    <string name="training_correct">Correct</string>
+    <string name="training_incorrect">Not quite. Correct is:</string>
+    <string name="training_yo_hint">Note: written with ё.</string>
+    <!-- %1$s: the Latin letters found in the answer -->
+    <string name="training_latin_letters">Latin letters in your answer: %1$s. Please use the Russian keyboard.</string>
+    <string name="training_empty_answer">Please enter an answer.</string>
+    <string name="training_nothing_title">All done for today</string>
+    <string name="training_nothing_text">No forms are due. You can allow more new forms per day in the settings.</string>
+    <string name="training_finished_title">Session complete</string>
+    <string name="training_done">Done</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_new_forms">New forms per day</string>
+    <string name="settings_session_size">Cards per session</string>
+    <string name="settings_strict_yo">Strict ё</string>
+    <string name="settings_strict_yo_summary">Count е instead of ё as wrong</string>
+    <string name="settings_tenses">Quizzed tenses</string>
+    <string name="settings_tenses_hint">At least one tense stays selected.</string>
+    <string name="settings_decrease">Decrease</string>
+    <string name="settings_increase">Increase</string>
+    <!-- %1$d: correct on first try, %2$d: cards in session (selects the plural) -->
+    <plurals name="training_finished_text">
+        <item quantity="one">%1$d of %2$d form correct on the first try.</item>
+        <item quantity="other">%1$d of %2$d forms correct on the first try.</item>
+    </plurals>
 </resources>

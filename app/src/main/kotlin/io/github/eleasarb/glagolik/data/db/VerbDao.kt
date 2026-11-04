@@ -29,6 +29,19 @@ interface VerbDao {
     @Query("SELECT * FROM verb_form WHERE verb_id = :verbId ORDER BY form, variant")
     suspend fun getForms(verbId: Int): List<VerbFormEntity>
 
+    /** Trainable forms of core verbs, in frequency order of the verbs. */
+    @Query(
+        """
+        SELECT verb.id AS verb_id, verb.infinitive, verb.aspect, verb.translation_en,
+            verb.translation_de, verb_form.form, verb_form.variant, verb_form.value
+        FROM verb_form
+        JOIN verb ON verb.id = verb_form.verb_id
+        WHERE verb.is_core = 1 AND verb_form.is_trainable = 1
+        ORDER BY verb.frequency_rank, verb_form.form, verb_form.variant
+        """,
+    )
+    suspend fun getTrainableForms(): List<TrainableFormRow>
+
     @Query(
         """
         SELECT verb.* FROM verb

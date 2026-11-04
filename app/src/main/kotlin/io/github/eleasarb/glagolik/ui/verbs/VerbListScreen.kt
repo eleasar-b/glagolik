@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +41,8 @@ import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
 @Composable
 fun VerbListRoute(
     onVerbClick: (Int) -> Unit,
+    onTrainingClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     onAboutClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: VerbListViewModel = hiltViewModel(),
@@ -49,6 +52,8 @@ fun VerbListRoute(
         uiState = uiState,
         onQueryChange = viewModel::onQueryChange,
         onVerbClick = onVerbClick,
+        onTrainingClick = onTrainingClick,
+        onSettingsClick = onSettingsClick,
         onAboutClick = onAboutClick,
         modifier = modifier,
     )
@@ -60,15 +65,28 @@ fun VerbListScreen(
     uiState: VerbListUiState,
     onQueryChange: (String) -> Unit,
     onVerbClick: (Int) -> Unit,
+    onTrainingClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     onAboutClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
         modifier = modifier,
+        floatingActionButton = {
+            ExtendedFloatingActionButton(onClick = onTrainingClick) {
+                Text(stringResource(R.string.training_start))
+            }
+        },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_settings),
+                            contentDescription = stringResource(R.string.settings_title),
+                        )
+                    }
                     IconButton(onClick = onAboutClick) {
                         Icon(
                             painter = painterResource(R.drawable.ic_info),
@@ -159,6 +177,8 @@ private fun VerbListScreenPreview() {
             ),
             onQueryChange = {},
             onVerbClick = {},
+            onTrainingClick = {},
+            onSettingsClick = {},
             onAboutClick = {},
         )
     }
