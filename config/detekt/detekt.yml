@@ -19,6 +19,8 @@ style:
     # Sample data in previews
     ignoreAnnotated:
       - Preview
+    # Enum constructor values are definitions, not magic numbers
+    ignoreEnums: true
   UnusedPrivateMember:
     # @Preview functions are private and only used by tooling
     ignoreAnnotated:

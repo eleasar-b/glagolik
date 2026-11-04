@@ -24,7 +24,7 @@ class ImporterTest {
     fun `output matches snapshot`() {
         val result = import()
         val database = temp.newFile("verbs.db")
-        writeDatabase(database, result.verbs, result.links)
+        writeDatabase(database, result.verbs, result.links, version = 1)
         val actual = buildString {
             appendLine("## verb-ids.csv")
             append(result.idsCsv)
@@ -125,6 +125,7 @@ class ImporterTest {
             input = input,
             overrides = overrides,
             ids = File(temp.root, "verb-ids.csv"),
+            contentVersion = File(temp.root, "content-version.txt"),
             selection = temp.newFile("selection.csv"),
             report = temp.newFile("report.md"),
             database = File(temp.root, "verbs.db"),
@@ -137,6 +138,50 @@ class ImporterTest {
         assertThrows(ImportException::class.java) {
             execute(paths, verify = true, coreSize = CORE_SIZE)
         }
+    }
+
+    @Test
+    fun `content version starts at 1, stays on rerun and bumps on content change`() {
+        val paths = ImportPaths(
+            input = input,
+            overrides = overrides,
+            ids = File(temp.root, "verb-ids.csv"),
+            contentVersion = File(temp.root, "content-version.txt"),
+            selection = File(temp.root, "selection.csv"),
+            report = File(temp.root, "report.md"),
+            database = File(temp.root, "verbs.db"),
+        )
+        execute(paths, verify = false, coreSize = CORE_SIZE)
+        val first = checkNotNull(ContentVersion.read(paths.contentVersion))
+        assertEquals(1, first.version)
+        assertTrue(dumpDatabase(paths.database).startsWith("user_version=1\n"))
+
+        execute(paths, verify = false, coreSize = CORE_SIZE)
+        assertEquals(first, ContentVersion.read(paths.contentVersion))
+
+        execute(paths, verify = false, coreSize = CORE_SIZE + 1)
+        val second = checkNotNull(ContentVersion.read(paths.contentVersion))
+        assertEquals(2, second.version)
+        assertTrue(dumpDatabase(paths.database).startsWith("user_version=2\n"))
+    }
+
+    @Test
+    fun `verify fails when content changed without a version bump`() {
+        val paths = ImportPaths(
+            input = input,
+            overrides = overrides,
+            ids = File(temp.root, "verb-ids.csv"),
+            contentVersion = File(temp.root, "content-version.txt"),
+            selection = File(temp.root, "selection.csv"),
+            report = File(temp.root, "report.md"),
+            database = File(temp.root, "verbs.db"),
+        )
+        execute(paths, verify = false, coreSize = CORE_SIZE)
+
+        val error = assertThrows(ImportException::class.java) {
+            execute(paths, verify = true, coreSize = CORE_SIZE + 1)
+        }
+        assertTrue(error.message.orEmpty().contains("content-version.txt"))
     }
 
     private fun import(
