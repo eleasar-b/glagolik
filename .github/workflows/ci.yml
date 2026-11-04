@@ -30,6 +30,13 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      # Robolectric downloads its Android framework jars (~150 MB) outside of Gradle
+      - name: Cache Robolectric jars
+        uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ hashFiles('gradle/libs.versions.toml', 'app/src/test/resources/robolectric.properties') }}
+
       # A fixed debug keystore keeps the signature stable across CI runs,
       # so new debug APKs install as updates over older ones.
       - name: Install shared debug keystore
