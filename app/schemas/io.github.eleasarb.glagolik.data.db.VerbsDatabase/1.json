@@ -1,0 +1,227 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "9289eac95cfa6d26b98fd0b5448b6a88",
+    "entities": [
+      {
+        "tableName": "verb",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `infinitive` TEXT NOT NULL, `infinitive_bare` TEXT NOT NULL, `aspect` TEXT NOT NULL, `frequency_rank` INTEGER NOT NULL, `is_core` INTEGER NOT NULL, `translation_en` TEXT NOT NULL, `translation_de` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "infinitive",
+            "columnName": "infinitive",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "infinitiveBare",
+            "columnName": "infinitive_bare",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aspect",
+            "columnName": "aspect",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "frequencyRank",
+            "columnName": "frequency_rank",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isCore",
+            "columnName": "is_core",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "translationEn",
+            "columnName": "translation_en",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "translationDe",
+            "columnName": "translation_de",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_verb_infinitive_bare",
+            "unique": false,
+            "columnNames": [
+              "infinitive_bare"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_verb_infinitive_bare` ON `${TABLE_NAME}` (`infinitive_bare`)"
+          }
+        ]
+      },
+      {
+        "tableName": "verb_form",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`verb_id` INTEGER NOT NULL, `form` TEXT NOT NULL, `variant` INTEGER NOT NULL, `value` TEXT NOT NULL, `value_bare` TEXT NOT NULL, `is_trainable` INTEGER NOT NULL, PRIMARY KEY(`verb_id`, `form`, `variant`), FOREIGN KEY(`verb_id`) REFERENCES `verb`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "verbId",
+            "columnName": "verb_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "form",
+            "columnName": "form",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "variant",
+            "columnName": "variant",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valueBare",
+            "columnName": "value_bare",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isTrainable",
+            "columnName": "is_trainable",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "verb_id",
+            "form",
+            "variant"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_verb_form_verb_id",
+            "unique": false,
+            "columnNames": [
+              "verb_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_verb_form_verb_id` ON `${TABLE_NAME}` (`verb_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "verb",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "verb_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "aspect_partner",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`verb_id` INTEGER NOT NULL, `partner_id` INTEGER NOT NULL, PRIMARY KEY(`verb_id`, `partner_id`), FOREIGN KEY(`verb_id`) REFERENCES `verb`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`partner_id`) REFERENCES `verb`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "verbId",
+            "columnName": "verb_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "partnerId",
+            "columnName": "partner_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "verb_id",
+            "partner_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_aspect_partner_verb_id",
+            "unique": false,
+            "columnNames": [
+              "verb_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_aspect_partner_verb_id` ON `${TABLE_NAME}` (`verb_id`)"
+          },
+          {
+            "name": "index_aspect_partner_partner_id",
+            "unique": false,
+            "columnNames": [
+              "partner_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_aspect_partner_partner_id` ON `${TABLE_NAME}` (`partner_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "verb",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "verb_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "verb",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "partner_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9289eac95cfa6d26b98fd0b5448b6a88')"
+    ]
+  }
+}

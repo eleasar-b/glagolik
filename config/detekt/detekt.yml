@@ -7,10 +7,18 @@ naming:
     ignoreAnnotated:
       - Composable
 
+complexity:
+  LongParameterList:
+    # Composables and test-data builders use defaulted parameters by design
+    ignoreDefaultParameters: true
+
 style:
   MagicNumber:
     # Color literals in the theme are design tokens, not magic numbers
     ignorePropertyDeclaration: true
+    # Sample data in previews
+    ignoreAnnotated:
+      - Preview
   UnusedPrivateMember:
     # @Preview functions are private and only used by tooling
     ignoreAnnotated:
