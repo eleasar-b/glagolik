@@ -96,11 +96,16 @@ io/github/eleasarb/glagolik/
 - **Korrekturen:** Manuelle Korrekturen stehen in `data/overrides.csv`, nie
   direkt in den Raw-Daten. Aktionen: `EXCLUDE` (Verb weglassen), `ALLOW_MISSING`
   (Formen fehlen legitim, z. B. unpersönliche Verben), `SET` (Feld ersetzen, nur mit
-  geprüftem Wert). Jede Zeile braucht einen Grund.
+  geprüftem Wert), `NO_TRAINING` (Formen bleiben in der Tabelle, werden aber nie
+  abgefragt, z. B. Präsens von быть). Jede Zeile braucht einen Grund.
+- **Stabile IDs:** `data/verb-ids.csv` ordnet jedem Verb (betonter Infinitiv + Aspekt)
+  eine feste ID zu. Lernfortschritt referenziert diese ID. Neue Verben erhalten die
+  nächste freie ID, IDs weggefallener Verben bleiben reserviert und werden nie neu
+  vergeben. Der Frequenzrang steht separat in `verb.frequency_rank`.
 - **Aspektpartner ausserhalb der 600** werden als Referenzverben (`is_core = 0`)
   mitgeliefert, damit die Verlinkung aufgeht. Ungültige Partner werden übersprungen
   und in `data/import-report.md` gelistet.
-- **Ausführen:** `./gradlew :tools:importer:importVerbs` erzeugt `selection.csv`,
+- **Ausführen:** `./gradlew :tools:importer:importVerbs` erzeugt `verb-ids.csv`, `selection.csv`,
   `import-report.md` und `verbs.db`. `verifyVerbs` prüft in der CI, dass alles aktuell ist.
 
 ## 6. Lernlogik

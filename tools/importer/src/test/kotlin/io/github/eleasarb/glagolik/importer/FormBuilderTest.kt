@@ -44,6 +44,21 @@ class FormBuilderTest {
     }
 
     @Test
+    fun `not trainable fields affect only forms built from them`() {
+        val presfut = SourceField.entries.filter { it.column.startsWith("presfut") }.toSet()
+
+        val imperfective = buildForms(source.getValue("быть"), Aspect.IMPERFECTIVE, presfut)
+        assertTrue(imperfective.filter { it.form in PRESENT_KEYS }.none { it.isTrainable })
+        assertTrue(imperfective.filter { it.form in FUTURE_KEYS }.all { it.isTrainable })
+        assertTrue(imperfective.filter { it.form.name.startsWith("PAST") }.all { it.isTrainable })
+
+        val biaspectual =
+            buildForms(source.getValue("использовать"), Aspect.BIASPECTUAL, presfut)
+        val finite = biaspectual.filter { it.form in PRESENT_KEYS + FUTURE_KEYS }
+        assertTrue(finite.none { it.isTrainable })
+    }
+
+    @Test
     fun `variants keep their source order`() {
         val forms = buildForms(source.getValue("поднять"), Aspect.PERFECTIVE).byKey()
         assertEquals(listOf("по́днял", "подня́л"), forms[FormKey.PAST_M])
@@ -54,6 +69,7 @@ class FormBuilderTest {
 
     private companion object {
         val PRESENT_KEYS = FormKey.entries.filter { it.name.startsWith("PRESENT") }
+        val FUTURE_KEYS = FormKey.entries.filter { it.name.startsWith("FUTURE") }
     }
 }
 

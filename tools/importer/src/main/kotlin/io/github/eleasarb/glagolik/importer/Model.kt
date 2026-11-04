@@ -78,10 +78,17 @@ data class VerbKey(val accented: String, val aspect: String) {
     override fun toString(): String = "$accented ($aspect)"
 }
 
-data class VerbForm(val form: FormKey, val variant: Int, val value: String)
+data class VerbForm(
+    val form: FormKey,
+    val variant: Int,
+    val value: String,
+    /** `false` for forms that appear in the conjugation table but are never quizzed. */
+    val isTrainable: Boolean = true,
+)
 
 data class Verb(
     val id: Int,
+    val frequencyRank: Int,
     val infinitive: String,
     val aspect: Aspect,
     val isCore: Boolean,

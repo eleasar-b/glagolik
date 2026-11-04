@@ -52,31 +52,42 @@ private val DIRECT = mapOf(
  *
  * A future form is only generated for persons that have a present form, so impersonal
  * verbs (хочется → будет хотеться) stay consistent.
+ *
+ * Forms built from a field in [notTrainable] are marked as not trainable. The generated
+ * compound future does not come from a source cell and is always trainable.
  */
-fun buildForms(verb: SourceVerb, aspect: Aspect): List<VerbForm> {
+fun buildForms(
+    verb: SourceVerb,
+    aspect: Aspect,
+    notTrainable: Set<SourceField> = emptySet(),
+): List<VerbForm> {
     val forms = mutableListOf<VerbForm>()
-    DIRECT.forEach { (field, key) -> forms += variantsOf(key, verb.fields.getValue(field)) }
+    fun fromCell(key: FormKey, field: SourceField) {
+        forms += variantsOf(key, verb.fields.getValue(field), field !in notTrainable)
+    }
+    DIRECT.forEach { (field, key) -> fromCell(key, field) }
     PERSONS.forEachIndexed { person, field ->
-        val cell = verb.fields.getValue(field)
         when (aspect) {
             Aspect.IMPERFECTIVE -> {
-                forms += variantsOf(PRESENT[person], cell)
-                if (cell.isNotEmpty()) forms += compoundFuture(verb, person)
+                fromCell(PRESENT[person], field)
+                if (verb.fields.getValue(field).isNotEmpty()) forms += compoundFuture(verb, person)
             }
 
-            Aspect.PERFECTIVE -> forms += variantsOf(FUTURE[person], cell)
+            Aspect.PERFECTIVE -> fromCell(FUTURE[person], field)
 
             Aspect.BIASPECTUAL -> {
-                forms += variantsOf(PRESENT[person], cell)
-                forms += variantsOf(FUTURE[person], cell)
+                fromCell(PRESENT[person], field)
+                fromCell(FUTURE[person], field)
             }
         }
     }
     return forms.sortedWith(compareBy({ it.form.ordinal }, { it.variant }))
 }
 
-private fun variantsOf(key: FormKey, cell: String): List<VerbForm> =
-    splitVariants(cell).mapIndexed { index, word -> VerbForm(key, index, toStressed(word)) }
+private fun variantsOf(key: FormKey, cell: String, isTrainable: Boolean): List<VerbForm> =
+    splitVariants(cell).mapIndexed { index, word ->
+        VerbForm(key, index, toStressed(word), isTrainable)
+    }
 
 private fun compoundFuture(verb: SourceVerb, person: Int): VerbForm {
     val auxiliary = FUTURE_AUXILIARY[person]

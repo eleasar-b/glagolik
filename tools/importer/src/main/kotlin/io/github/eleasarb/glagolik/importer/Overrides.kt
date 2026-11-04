@@ -12,6 +12,12 @@ enum class OverrideAction {
 
     /** Replace one field with a corrected value (source notation). Human-reviewed only. */
     SET,
+
+    /**
+     * Keep the forms built from the listed fields in the data, but never quiz them
+     * (e.g. быть: the present tense is not used in modern Russian).
+     */
+    NO_TRAINING,
 }
 
 data class Override(
@@ -30,6 +36,11 @@ class Overrides(private val entries: List<Override>) {
 
     fun allowedMissing(key: VerbKey): Set<SourceField> = byKey[key].orEmpty()
         .filter { it.action == OverrideAction.ALLOW_MISSING }
+        .flatMap { it.fields }
+        .toSet()
+
+    fun notTrainable(key: VerbKey): Set<SourceField> = byKey[key].orEmpty()
+        .filter { it.action == OverrideAction.NO_TRAINING }
         .flatMap { it.fields }
         .toSet()
 
@@ -71,6 +82,9 @@ class Overrides(private val entries: List<Override>) {
             require(reason.isNotEmpty()) { "overrides.csv:$line: reason is mandatory" }
             require(action != OverrideAction.SET || fields.size == 1) {
                 "overrides.csv:$line: SET needs exactly one field"
+            }
+            require(action != OverrideAction.NO_TRAINING || fields.isNotEmpty()) {
+                "overrides.csv:$line: NO_TRAINING needs at least one field"
             }
             return Override(
                 key = VerbKey(row.getValue("accented").trim(), row.getValue("aspect").trim()),

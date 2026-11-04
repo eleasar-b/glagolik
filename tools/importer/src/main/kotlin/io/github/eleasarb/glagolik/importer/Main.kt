@@ -4,7 +4,8 @@ import java.io.File
 import kotlin.system.exitProcess
 
 private const val USAGE = """
-Usage: importer --input <verbs.csv> --overrides <overrides.csv> --selection <selection.csv>
+Usage: importer --input <verbs.csv> --overrides <overrides.csv> --ids <verb-ids.csv>
+                --selection <selection.csv>
                 --report <report.md> --db <verbs.db> [--core-size <n>] [--verify]
 """
 
@@ -13,6 +14,7 @@ fun main(args: Array<String>) {
     val paths = ImportPaths(
         input = File(options.require("--input")),
         overrides = File(options.require("--overrides")),
+        ids = File(options.require("--ids")),
         selection = File(options.require("--selection")),
         report = File(options.require("--report")),
         database = File(options.require("--db")),

@@ -33,6 +33,7 @@ private val SCHEMA = listOf(
         `variant` INTEGER NOT NULL,
         `value` TEXT NOT NULL,
         `value_bare` TEXT NOT NULL,
+        `is_trainable` INTEGER NOT NULL,
         PRIMARY KEY(`verb_id`, `form`, `variant`),
         FOREIGN KEY(`verb_id`) REFERENCES `verb`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
     )
@@ -105,7 +106,7 @@ private fun insertVerbs(connection: Connection, verbs: List<Verb>) {
                 verb.infinitive,
                 toBare(verb.infinitive),
                 verb.aspect.name,
-                verb.id,
+                verb.frequencyRank,
                 if (verb.isCore) 1 else 0,
                 verb.translationEn,
                 verb.translationDe,
@@ -117,7 +118,14 @@ private fun insertVerbs(connection: Connection, verbs: List<Verb>) {
         table = "verb_form",
         rows = verbs.flatMap { verb ->
             verb.forms.map { form ->
-                listOf(verb.id, form.form.name, form.variant, form.value, toBare(form.value))
+                listOf(
+                    verb.id,
+                    form.form.name,
+                    form.variant,
+                    form.value,
+                    toBare(form.value),
+                    if (form.isTrainable) 1 else 0,
+                )
             }
         },
     )

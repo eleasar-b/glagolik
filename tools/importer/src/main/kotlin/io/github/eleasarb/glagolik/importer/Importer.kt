@@ -7,6 +7,7 @@ const val DEFAULT_CORE_SIZE = 600
 data class ImportPaths(
     val input: File,
     val overrides: File,
+    val ids: File,
     val selection: File,
     val report: File,
     val database: File,
@@ -15,6 +16,7 @@ data class ImportPaths(
 data class ImportResult(
     val verbs: List<Verb>,
     val links: List<Pair<Int, Int>>,
+    val idsCsv: String,
     val selectionCsv: String,
     val report: String,
 )
@@ -22,7 +24,12 @@ data class ImportResult(
 class ImportException(message: String) : Exception(message)
 
 /** Runs the whole pipeline in memory. Throws [ImportException] on validation errors. */
-fun runImport(input: File, overridesFile: File, coreSize: Int = DEFAULT_CORE_SIZE): ImportResult {
+fun runImport(
+    input: File,
+    overridesFile: File,
+    idsFile: File,
+    coreSize: Int = DEFAULT_CORE_SIZE,
+): ImportResult {
     val source = readSource(input)
     val overrides = Overrides.read(overridesFile)
     val unmatched = overrides.unmatched(source)
@@ -45,46 +52,45 @@ fun runImport(input: File, overridesFile: File, coreSize: Int = DEFAULT_CORE_SIZ
         )
     }
 
-    val selected = selection.core.map { it to true } + selection.partners.map { it to false }
-    val verbs = selected.map { (source, isCore) -> toVerb(source, isCore) }.sortedBy { it.id }
-    val idByKey = selected.associate { (source, _) -> source.key to source.rank }
-    val links = selection.links.map { (from, to) -> idByKey.getValue(from) to idByKey.getValue(to) }
+    val coreKeys = selection.core.map { it.key }.toSet()
+    val selected = (selection.core + selection.partners).sortedBy { it.rank }
+    check(selected.map { it.key }.toSet().size == selected.size) { "duplicate verb keys" }
+    val ids = VerbIds.read(idsFile).assign(selected.map { it.key })
+
+    val verbs = selected
+        .map { source -> toVerb(source, ids.idOf(source.key), source.key in coreKeys, overrides) }
+        .sortedBy { it.id }
+    val links = selection.links.map { (from, to) -> ids.idOf(from) to ids.idOf(to) }
 
     return ImportResult(
         verbs = verbs,
         links = links,
-        selectionCsv = selectionCsv(selected.map { it.first }, idByKey.keys, selection.core),
+        idsCsv = ids.toCsv(),
+        selectionCsv = selectionCsv(verbs),
         report = report(selection, overrides, verbs),
     )
 }
 
-private fun toVerb(source: SourceVerb, isCore: Boolean): Verb {
+private fun toVerb(source: SourceVerb, id: Int, isCore: Boolean, overrides: Overrides): Verb {
     val aspect = requireNotNull(Aspect.fromSource(source.aspect))
     return Verb(
-        id = source.rank,
+        id = id,
+        frequencyRank = source.rank,
         infinitive = toStressed(splitVariants(source.accented).first()),
         aspect = aspect,
         isCore = isCore,
         translationEn = source.translationEn,
         translationDe = source.translationDe,
-        forms = buildForms(source, aspect),
+        forms = buildForms(source, aspect, overrides.notTrainable(source.key)),
     )
 }
 
-private fun selectionCsv(
-    selected: List<SourceVerb>,
-    keys: Set<VerbKey>,
-    core: List<SourceVerb>,
-): String {
-    check(selected.size == keys.size) { "duplicate verb keys in selection" }
-    val coreKeys = core.map { it.key }.toSet()
-    return buildString {
-        appendLine("rank,infinitive,aspect,role")
-        selected.sortedBy { it.rank }.forEach { verb ->
-            val role = if (verb.key in coreKeys) "core" else "partner"
-            val infinitive = toStressed(splitVariants(verb.accented).first())
-            appendLine("${verb.rank},$infinitive,${verb.aspect},$role")
-        }
+private fun selectionCsv(verbs: List<Verb>): String = buildString {
+    appendLine("id,rank,infinitive,aspect,role")
+    verbs.sortedBy { it.frequencyRank }.forEach { verb ->
+        val role = if (verb.isCore) "core" else "partner"
+        val aspect = verb.aspect.name.lowercase()
+        appendLine("${verb.id},${verb.frequencyRank},${verb.infinitive},$aspect,$role")
     }
 }
 
@@ -97,6 +103,8 @@ private fun report(selection: Selection, overrides: Overrides, verbs: List<Verb>
         appendLine("- Core verbs: ${selection.core.size}")
         appendLine("- Partner verbs (outside core): ${selection.partners.size}")
         appendLine("- Forms: ${verbs.sumOf { it.forms.size }}")
+        val untrainable = verbs.sumOf { verb -> verb.forms.count { !it.isTrainable } }
+        appendLine("- Forms excluded from training: $untrainable")
         appendLine("- Partner links: ${selection.links.size}")
         appendLine()
         appendLine("## Overrides")
@@ -114,14 +122,16 @@ private fun report(selection: Selection, overrides: Overrides, verbs: List<Verb>
 
 /** Writes all outputs, or with [verify] compares them against the committed files. */
 fun execute(paths: ImportPaths, verify: Boolean, coreSize: Int = DEFAULT_CORE_SIZE) {
-    val result = runImport(paths.input, paths.overrides, coreSize)
+    val result = runImport(paths.input, paths.overrides, paths.ids, coreSize)
     if (!verify) {
+        paths.ids.writeText(result.idsCsv)
         paths.selection.writeText(result.selectionCsv)
         paths.report.writeText(result.report)
         writeDatabase(paths.database, result.verbs, result.links)
         return
     }
     val mismatches = mutableListOf<String>()
+    if (!paths.ids.isFileWithText(result.idsCsv)) mismatches += paths.ids.path
     if (!paths.selection.isFileWithText(result.selectionCsv)) mismatches += paths.selection.path
     if (!paths.report.isFileWithText(result.report)) mismatches += paths.report.path
     val fresh = File.createTempFile("verbs", ".db")

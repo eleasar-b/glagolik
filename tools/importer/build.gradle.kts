@@ -43,6 +43,8 @@ val importerArgs = listOf(
     repoRoot.file("data/raw/verbs.csv").asFile.path,
     "--overrides",
     repoRoot.file("data/overrides.csv").asFile.path,
+    "--ids",
+    repoRoot.file("data/verb-ids.csv").asFile.path,
     "--selection",
     repoRoot.file("data/selection.csv").asFile.path,
     "--report",
@@ -55,7 +57,7 @@ val utf8Output = listOf("-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8")
 
 tasks.register<JavaExec>("importVerbs") {
     group = "glagolik"
-    description = "Regenerates data/selection.csv, data/import-report.md and verbs.db."
+    description = "Regenerates verb-ids.csv, selection.csv, import-report.md and verbs.db."
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("io.github.eleasarb.glagolik.importer.MainKt")
     jvmArgs(utf8Output)

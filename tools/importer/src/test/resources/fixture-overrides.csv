@@ -1,3 +1,4 @@
 accented,aspect,action,fields,value,reason
 хоте'ться,imperfective,ALLOW_MISSING,imperative_sg;imperative_pl;past_m;past_f;past_pl;presfut_sg1;presfut_sg2;presfut_pl1;presfut_pl2;presfut_pl3,,impersonal verb
 установить,perfective,EXCLUDE,,,no stress mark on infinitive
+быть,imperfective,NO_TRAINING,presfut_sg1;presfut_sg2;presfut_sg3;presfut_pl1;presfut_pl2;presfut_pl3,,no present tense in modern Russian
