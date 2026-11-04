@@ -4,9 +4,6 @@ import java.io.File
 import java.sql.Connection
 import java.sql.DriverManager
 
-/** Bump when the schema changes; the app's Room database version must match. */
-const val SCHEMA_VERSION = 1
-
 /**
  * Schema of `verbs.db`, written in Room's style (backticks, index names) so that the Room
  * entities can mirror it 1:1 and `createFromAsset` validates.
@@ -53,19 +50,24 @@ private val SCHEMA = listOf(
 )
 
 private val DUMP_QUERIES = listOf(
+    "SELECT type, name, sql FROM sqlite_master ORDER BY type, name",
     "SELECT * FROM verb ORDER BY id",
     "SELECT * FROM verb_form ORDER BY verb_id, form, variant",
     "SELECT * FROM aspect_partner ORDER BY verb_id, partner_id",
 )
 
-fun writeDatabase(file: File, verbs: List<Verb>, links: List<Pair<Int, Int>>) {
+/**
+ * Writes verbs.db. [version] becomes PRAGMA user_version, which the app's
+ * VerbsDatabase.VERSION must equal (see ContentVersion).
+ */
+fun writeDatabase(file: File, verbs: List<Verb>, links: List<Pair<Int, Int>>, version: Int) {
     file.parentFile?.mkdirs()
     file.delete()
     connect(file).use { connection ->
         connection.autoCommit = false
         connection.createStatement().use { statement ->
             SCHEMA.forEach { statement.execute(it.trimIndent()) }
-            statement.execute("PRAGMA user_version = $SCHEMA_VERSION")
+            statement.execute("PRAGMA user_version = $version")
         }
         insertVerbs(connection, verbs)
         insertLinks(connection, links)
@@ -75,22 +77,28 @@ fun writeDatabase(file: File, verbs: List<Verb>, links: List<Pair<Int, Int>>) {
     }
 }
 
-/** Canonical text form of the database content, used to compare two databases. */
-fun dumpDatabase(file: File): String = connect(file).use { connection ->
+/** Canonical text form of schema and content, used to compare two databases. */
+fun dumpDatabase(file: File): String = "user_version=${readUserVersion(file)}\n" + dumpContent(file)
+
+/** Like [dumpDatabase] but without user_version: the basis of the content hash. */
+fun dumpContent(file: File): String = connect(file).use { connection ->
     buildString {
         connection.createStatement().use { statement ->
-            appendLine("user_version=" + statement.executeQuery("PRAGMA user_version").getInt(1))
             DUMP_QUERIES.forEach { query ->
                 appendLine("# $query")
                 statement.executeQuery(query).use { rows ->
                     val columns = rows.metaData.columnCount
                     while (rows.next()) {
-                        appendLine((1..columns).joinToString("\t") { rows.getString(it) })
+                        appendLine((1..columns).joinToString("\t") { rows.getString(it) ?: "NULL" })
                     }
                 }
             }
         }
     }
+}
+
+private fun readUserVersion(file: File): Int = connect(file).use { connection ->
+    connection.createStatement().use { it.executeQuery("PRAGMA user_version").getInt(1) }
 }
 
 private fun connect(file: File): Connection =

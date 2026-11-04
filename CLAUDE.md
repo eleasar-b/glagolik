@@ -105,13 +105,23 @@ io/github/eleasarb/glagolik/
 - **Aspektpartner ausserhalb der 600** werden als Referenzverben (`is_core = 0`)
   mitgeliefert, damit die Verlinkung aufgeht. Ungültige Partner werden übersprungen
   und in `data/import-report.md` gelistet.
+- **Datenversion:** `data/content-version.txt` hält Version und SHA-256 des Inhalts von
+  `verbs.db`. Ändert sich Schema oder Inhalt, erhöht der Importer die Version
+  (= `PRAGMA user_version`). `VerbsDatabase.VERSION` muss nachgezogen werden, der
+  Schema-Test erzwingt das. Nur so ersetzt Room die installierte Kopie.
 - **Ausführen:** `./gradlew :tools:importer:importVerbs` erzeugt `verb-ids.csv`, `selection.csv`,
   `import-report.md` und `verbs.db`. `verifyVerbs` prüft in der CI, dass alles aktuell ist.
 
 ## 6. Lernlogik
 
-- **Lerneinheit:** Spaced Repetition (FSRS bevorzugt, SM-2 als Fallback) auf
-  Ebene der **einzelnen Verbform**, nicht des Verbs.
+- **Lerneinheit:** Spaced Repetition mit FSRS-6 auf Ebene der **einzelnen Verbform**,
+  nicht des Verbs. Eigene Portierung von py-fsrs 6.3.2 (MIT) in `domain/srs`, geprüft
+  gegen Referenzwerte aus py-fsrs (`src/test/resources/srs`). Standardparameter,
+  Zielretention 0.9, Lernschritte 1 min / 10 min, Wiederlernschritt 10 min.
+- **Fortschritt:** eigene Datenbank `progress.db` (Tabellen `card`, `review_log`),
+  getrennt von `verbs.db`. Nie destruktiv: jede Schema-Änderung braucht eine Migration.
+- **Bewertung:** falsch = Again, richtig = Good, nach richtiger Antwort optional „leicht“ = Easy.
+- **Defaults:** 10 neue Formen pro Tag, 20 Karten pro Session (einstellbar).
 - **Sessions:** Die Sessionlänge ist frei wählbar (Anzahl Karten oder Minuten).
   Fällige Karten kommen zuerst, neue Karten sind pro Tag begrenzt.
 - **Filter:**

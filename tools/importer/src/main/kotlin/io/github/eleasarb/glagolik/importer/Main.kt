@@ -5,7 +5,7 @@ import kotlin.system.exitProcess
 
 private const val USAGE = """
 Usage: importer --input <verbs.csv> --overrides <overrides.csv> --ids <verb-ids.csv>
-                --selection <selection.csv>
+                --content-version <content-version.txt> --selection <selection.csv>
                 --report <report.md> --db <verbs.db> [--core-size <n>] [--verify]
 """
 
@@ -15,6 +15,7 @@ fun main(args: Array<String>) {
         input = File(options.require("--input")),
         overrides = File(options.require("--overrides")),
         ids = File(options.require("--ids")),
+        contentVersion = File(options.require("--content-version")),
         selection = File(options.require("--selection")),
         report = File(options.require("--report")),
         database = File(options.require("--db")),

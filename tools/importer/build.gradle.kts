@@ -45,6 +45,8 @@ val importerArgs = listOf(
     repoRoot.file("data/overrides.csv").asFile.path,
     "--ids",
     repoRoot.file("data/verb-ids.csv").asFile.path,
+    "--content-version",
+    repoRoot.file("data/content-version.txt").asFile.path,
     "--selection",
     repoRoot.file("data/selection.csv").asFile.path,
     "--report",

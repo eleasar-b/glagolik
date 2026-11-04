@@ -7,10 +7,16 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import io.github.eleasarb.glagolik.data.db.ProgressDao
+import io.github.eleasarb.glagolik.data.db.ProgressDatabase
 import io.github.eleasarb.glagolik.data.db.VerbDao
 import io.github.eleasarb.glagolik.data.db.VerbsDatabase
+import io.github.eleasarb.glagolik.data.repository.OfflineProgressRepository
 import io.github.eleasarb.glagolik.data.repository.OfflineVerbRepository
+import io.github.eleasarb.glagolik.data.repository.ProgressRepository
 import io.github.eleasarb.glagolik.data.repository.VerbRepository
+import io.github.eleasarb.glagolik.domain.srs.FsrsScheduler
+import java.time.Clock
 import javax.inject.Singleton
 
 @Module
@@ -23,6 +29,25 @@ object DatabaseModule {
 
     @Provides
     fun provideVerbDao(database: VerbsDatabase): VerbDao = database.verbDao()
+
+    @Provides
+    @Singleton
+    fun provideProgressDatabase(@ApplicationContext context: Context): ProgressDatabase =
+        ProgressDatabase.create(context)
+
+    @Provides
+    fun provideProgressDao(database: ProgressDatabase): ProgressDao = database.progressDao()
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+object LearningModule {
+    @Provides
+    @Singleton
+    fun provideScheduler(): FsrsScheduler = FsrsScheduler()
+
+    @Provides
+    fun provideClock(): Clock = Clock.systemUTC()
 }
 
 @Module
@@ -30,4 +55,7 @@ object DatabaseModule {
 interface RepositoryModule {
     @Binds
     fun bindVerbRepository(repository: OfflineVerbRepository): VerbRepository
+
+    @Binds
+    fun bindProgressRepository(repository: OfflineProgressRepository): ProgressRepository
 }

@@ -8,6 +8,7 @@ data class ImportPaths(
     val input: File,
     val overrides: File,
     val ids: File,
+    val contentVersion: File,
     val selection: File,
     val report: File,
     val database: File,
@@ -123,25 +124,45 @@ private fun report(selection: Selection, overrides: Overrides, verbs: List<Verb>
 /** Writes all outputs, or with [verify] compares them against the committed files. */
 fun execute(paths: ImportPaths, verify: Boolean, coreSize: Int = DEFAULT_CORE_SIZE) {
     val result = runImport(paths.input, paths.overrides, paths.ids, coreSize)
-    if (!verify) {
-        paths.ids.writeText(result.idsCsv)
-        paths.selection.writeText(result.selectionCsv)
-        paths.report.writeText(result.report)
-        writeDatabase(paths.database, result.verbs, result.links)
-        return
-    }
-    val mismatches = mutableListOf<String>()
-    if (!paths.ids.isFileWithText(result.idsCsv)) mismatches += paths.ids.path
-    if (!paths.selection.isFileWithText(result.selectionCsv)) mismatches += paths.selection.path
-    if (!paths.report.isFileWithText(result.report)) mismatches += paths.report.path
     val fresh = File.createTempFile("verbs", ".db")
     try {
-        writeDatabase(fresh, result.verbs, result.links)
-        if (!paths.database.exists() || dumpDatabase(fresh) != dumpDatabase(paths.database)) {
-            mismatches += paths.database.path
+        val stored = ContentVersion.read(paths.contentVersion)
+        val contentVersion = contentVersionFor(result, stored, fresh)
+        writeDatabase(fresh, result.verbs, result.links, contentVersion.version)
+        val outputs = mapOf(
+            paths.ids to result.idsCsv,
+            paths.contentVersion to contentVersion.toText(),
+            paths.selection to result.selectionCsv,
+            paths.report to result.report,
+        )
+        if (verify) {
+            verifyOutputs(outputs, fresh, paths.database)
+        } else {
+            outputs.forEach { (file, text) -> file.writeText(text) }
+            fresh.copyTo(paths.database, overwrite = true)
         }
     } finally {
         fresh.delete()
+    }
+}
+
+/** Hashes the content (written to [scratch]) and derives the version from [stored]. */
+private fun contentVersionFor(
+    result: ImportResult,
+    stored: ContentVersion?,
+    scratch: File,
+): ContentVersion {
+    writeDatabase(scratch, result.verbs, result.links, version = 0)
+    val hash = ContentVersion.sha256(dumpContent(scratch))
+    return stored?.next(hash) ?: ContentVersion(ContentVersion.INITIAL_VERSION, hash)
+}
+
+private fun verifyOutputs(outputs: Map<File, String>, fresh: File, database: File) {
+    val mismatches = outputs.filterNot { (file, text) -> file.isFileWithText(text) }.keys
+        .map { it.path }
+        .toMutableList()
+    if (!database.exists() || dumpDatabase(fresh) != dumpDatabase(database)) {
+        mismatches += database.path
     }
     if (mismatches.isNotEmpty()) {
         throw ImportException(
