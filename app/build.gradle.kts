@@ -3,6 +3,9 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.room)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
 }
@@ -55,6 +58,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     lint {
@@ -75,6 +79,11 @@ kotlin {
         jvmTarget.set(JvmTarget.JVM_17)
         allWarningsAsErrors.set(true)
     }
+}
+
+room {
+    // Exported schemas are checked against the bundled verbs.db in unit tests.
+    schemaDirectory("$projectDir/schemas")
 }
 
 ktlint {
@@ -98,7 +107,20 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
+    implementation(libs.androidx.navigation.compose)
+
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
+    implementation(libs.hilt.android)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    ksp(libs.hilt.compiler)
+
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    // Reads the bundled verbs.db to check it against the Room schema.
+    testImplementation(libs.sqlite.jdbc)
 
     ktlintRuleset(libs.compose.rules.ktlint)
     detektPlugins(libs.compose.rules.detekt)

@@ -1,5 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">Glagolik</string>
-    <string name="home_tagline">Train Russian verbs</string>
+
+    <string name="search_hint">Search verb or translation</string>
+    <string name="search_no_results">No verbs found</string>
+    <string name="navigate_back">Back</string>
+    <string name="verb_not_found">Verb not found</string>
+
+    <string name="aspect_imperfective">imperfective</string>
+    <string name="aspect_perfective">perfective</string>
+    <string name="aspect_biaspectual">biaspectual</string>
+    <string name="aspect_partners">Aspect partners</string>
+    <!-- %1$s: infinitive, %2$s: aspect -->
+    <string name="partner_chip">%1$s (%2$s)</string>
+
+    <string name="tense_present">Present</string>
+    <string name="tense_future">Future</string>
+    <string name="tense_past">Past</string>
+    <string name="tense_imperative">Imperative</string>
+    <string name="forms_not_trained">Grey forms are not used in modern Russian and are not quizzed.</string>
+
+    <!-- Russian pronouns, identical in every UI language -->
+    <string name="pronoun_sg1" translatable="false">я</string>
+    <string name="pronoun_sg2" translatable="false">ты</string>
+    <string name="pronoun_sg3" translatable="false">он/она́/оно́</string>
+    <string name="pronoun_pl1" translatable="false">мы</string>
+    <string name="pronoun_pl2" translatable="false">вы</string>
+    <string name="pronoun_pl3" translatable="false">они́</string>
+    <string name="pronoun_past_m" translatable="false">он</string>
+    <string name="pronoun_past_f" translatable="false">она́</string>
+    <string name="pronoun_past_n" translatable="false">оно́</string>
+    <string name="pronoun_past_pl" translatable="false">они́</string>
+
+    <string name="about_title">About</string>
+    <!-- %1$s: version name -->
+    <string name="about_version">Glagolik %1$s</string>
+    <string name="about_data_title">Verb data</string>
+    <string name="about_data_text">Verb forms and translations are taken from the OpenRussian.org dictionary and licensed under CC BY-SA 4.0. Changes: selection of the most frequent verbs, normalised stress marks, excluded or corrected entries. The adapted data is distributed under the same license.</string>
+    <string name="about_code_title">Source code</string>
+    <string name="about_code_text">Glagolik is licensed under the Apache License 2.0.</string>
 </resources>
