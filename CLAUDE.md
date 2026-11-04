@@ -155,7 +155,7 @@ die **Compose API Guidelines**.
 - Dateinamen:
   - eine Klasse: `Klassenname.kt`
   - mehrere Deklarationen: beschreibender Name in `PascalCase`
-- Testmethoden in Backticks: `` `ё typed as е is accepted with hint`() ``.
+- Testmethoden in Backticks: `` `yo typed as ye is accepted with hint`() `` (siehe §8 zu Kyrillisch).
 
 **Compose**
 - `@Composable`-Funktionen, die `Unit` zurückgeben, sind `PascalCase`
@@ -192,7 +192,15 @@ die **Compose API Guidelines**.
 - **Pflicht:** Unit-Tests für die Domain (`checking`, `srs`), für ViewModels
   inklusive Flows und für die Repositories.
 - **Test-Doubles:** Fakes statt Mocks.
-- **UI:** Compose-UI-Tests für die Kernflows Training, Liste und Verbtabelle.
+- **UI:** Compose-UI-Tests für die Kernflows Training, Liste und Verbtabelle. Sie laufen
+  mit Robolectric als normale Unit-Tests auf der JVM (`src/test`), getestet werden die
+  stateless `XyzScreen`-Composables. Robolectric läuft auf API 36
+  (`robolectric.properties`), bis Espresso API 37 unterstützt.
+- **Datenbank:** Ein Robolectric-Test öffnet das gebündelte `verbs.db` über Room, wie
+  beim ersten App-Start.
+- **Testnamen** in Backticks dürfen kein Kyrillisch enthalten, wenn der Test Lambdas nutzt
+  (z. B. `runTest`): Daraus entstehen Klassendateien, die auf Nicht-UTF-8-Dateisystemen
+  scheitern.
 - **Importer:** Snapshot-Test gegen eine kleine Fixture-CSV.
 
 ## 9. Git & CI

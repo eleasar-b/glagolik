@@ -61,6 +61,17 @@ android {
         buildConfig = true
     }
 
+    testOptions {
+        unitTests {
+            // Robolectric needs merged resources and assets (verbs.db)
+            isIncludeAndroidResources = true
+            all {
+                // Robolectric on API 36+ accesses FileDescriptor internals via SharedSecrets
+                it.jvmArgs("--add-exports", "java.base/jdk.internal.access=ALL-UNNAMED")
+            }
+        }
+    }
+
     lint {
         abortOnError = true
         warningsAsErrors = true
@@ -121,6 +132,12 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     // Reads the bundled verbs.db to check it against the Room schema.
     testImplementation(libs.sqlite.jdbc)
+    // Compose UI tests and Room asset test on the JVM
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core.ktx)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     ktlintRuleset(libs.compose.rules.ktlint)
     detektPlugins(libs.compose.rules.detekt)
