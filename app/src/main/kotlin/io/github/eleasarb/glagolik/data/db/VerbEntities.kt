@@ -72,3 +72,15 @@ data class AspectPartnerEntity(
     @ColumnInfo(name = "verb_id") val verbId: Int,
     @ColumnInfo(name = "partner_id") val partnerId: Int,
 )
+
+/** Result row of [VerbDao.getTrainableForms]: one form variant with its verb. */
+data class TrainableFormRow(
+    @ColumnInfo(name = "verb_id") val verbId: Int,
+    val infinitive: String,
+    val aspect: String,
+    @ColumnInfo(name = "translation_en") val translationEn: String,
+    @ColumnInfo(name = "translation_de") val translationDe: String,
+    val form: String,
+    val variant: Int,
+    val value: String,
+)

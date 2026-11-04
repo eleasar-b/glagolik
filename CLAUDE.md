@@ -121,7 +121,13 @@ io/github/eleasarb/glagolik/
 - **Fortschritt:** eigene Datenbank `progress.db` (Tabellen `card`, `review_log`),
   getrennt von `verbs.db`. Nie destruktiv: jede Schema-Änderung braucht eine Migration.
 - **Bewertung:** falsch = Again, richtig = Good, nach richtiger Antwort optional „leicht“ = Easy.
-- **Defaults:** 10 neue Formen pro Tag, 20 Karten pro Session (einstellbar).
+- **Defaults:** 10 neue Formen pro Tag, 20 Karten pro Session (einstellbar, DataStore).
+- **Session:** fällige Formen zuerst (am stärksten überfällig zuerst), dann neue Formen in
+  Frequenzreihenfolge der Verben, innerhalb der Session gemischt. Der Tag beginnt um
+  Mitternacht Ortszeit. Falsch beantwortete Karten kommen am Ende der Session erneut.
+- **Backup:** nur `progress.db` und `datastore/settings.preferences_pb` (Cloud-Backup und
+  Gerätewechsel, auch Seedvault). `progress.db` läuft im Journal-Modus TRUNCATE, damit
+  alles in einer Datei liegt. `verbs.db` wird nie gesichert.
 - **Sessions:** Die Sessionlänge ist frei wählbar (Anzahl Karten oder Minuten).
   Fällige Karten kommen zuerst, neue Karten sind pro Tag begrenzt.
 - **Filter:**

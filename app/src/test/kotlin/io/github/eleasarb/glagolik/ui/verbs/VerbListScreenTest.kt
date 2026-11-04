@@ -86,10 +86,30 @@ class VerbListScreenTest {
         assertEquals(true, opened)
     }
 
+    @Test
+    fun `training and settings buttons report clicks`() {
+        var training = false
+        var settings = false
+        show(
+            VerbListUiState(verbs = verbs, isLoading = false),
+            onTrainingClick = { training = true },
+            onSettingsClick = { settings = true },
+        )
+
+        compose.onNodeWithText(context.getString(R.string.training_start)).performClick()
+        compose.onNodeWithContentDescription(context.getString(R.string.settings_title))
+            .performClick()
+
+        assertEquals(true, training)
+        assertEquals(true, settings)
+    }
+
     private fun show(
         state: VerbListUiState,
         onQueryChange: (String) -> Unit = {},
         onVerbClick: (Int) -> Unit = {},
+        onTrainingClick: () -> Unit = {},
+        onSettingsClick: () -> Unit = {},
         onAboutClick: () -> Unit = {},
     ) {
         compose.setContent {
@@ -98,6 +118,8 @@ class VerbListScreenTest {
                     uiState = state,
                     onQueryChange = onQueryChange,
                     onVerbClick = onVerbClick,
+                    onTrainingClick = onTrainingClick,
+                    onSettingsClick = onSettingsClick,
                     onAboutClick = onAboutClick,
                 )
             }

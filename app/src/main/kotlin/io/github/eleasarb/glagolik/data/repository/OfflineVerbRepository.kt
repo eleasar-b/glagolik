@@ -1,11 +1,14 @@
 package io.github.eleasarb.glagolik.data.repository
 
+import io.github.eleasarb.glagolik.data.db.TrainableFormRow
 import io.github.eleasarb.glagolik.data.db.VerbDao
 import io.github.eleasarb.glagolik.data.db.VerbEntity
 import io.github.eleasarb.glagolik.data.db.VerbFormEntity
 import io.github.eleasarb.glagolik.domain.model.Aspect
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
 import io.github.eleasarb.glagolik.domain.model.FormKey
+import io.github.eleasarb.glagolik.domain.model.FormRef
+import io.github.eleasarb.glagolik.domain.model.TrainableForm
 import io.github.eleasarb.glagolik.domain.model.Translation
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
 import io.github.eleasarb.glagolik.domain.model.VerbSummary
@@ -28,6 +31,9 @@ class OfflineVerbRepository @Inject constructor(private val dao: VerbDao) : Verb
             partners = dao.getPartners(id).map { it.toSummary() },
         )
     }
+
+    override suspend fun getTrainableForms(): List<TrainableForm> =
+        dao.getTrainableForms().toTrainableForms()
 }
 
 /** Strips stress marks and surrounding whitespace; the bare columns carry no marks. */
@@ -40,6 +46,27 @@ internal fun VerbEntity.toSummary(): VerbSummary = VerbSummary(
     aspect = Aspect.valueOf(aspect),
     translation = Translation(german = translationDe, english = translationEn),
 )
+
+/** One entry per (verb, form); verbs keep the query order, forms are ordered by FormKey. */
+internal fun List<TrainableFormRow>.toTrainableForms(): List<TrainableForm> =
+    groupBy { it.verbId }.values.flatMap { rows ->
+        val first = rows.first()
+        val verb = VerbSummary(
+            id = first.verbId,
+            infinitive = first.infinitive,
+            aspect = Aspect.valueOf(first.aspect),
+            translation = Translation(german = first.translationDe, english = first.translationEn),
+        )
+        rows.groupBy { FormKey.valueOf(it.form) }
+            .toSortedMap()
+            .map { (form, variants) ->
+                TrainableForm(
+                    ref = FormRef(verb.id, form),
+                    verb = verb,
+                    expected = variants.sortedBy { it.variant }.map { it.value },
+                )
+            }
+    }
 
 /** Groups variants per slot and orders slots by grammar (FormKey), not alphabetically. */
 internal fun List<VerbFormEntity>.toConjugatedForms(): List<ConjugatedForm> =

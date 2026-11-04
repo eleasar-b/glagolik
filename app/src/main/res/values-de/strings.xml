@@ -23,4 +23,37 @@
     <string name="about_data_text">Verbformen und Übersetzungen stammen aus dem Wörterbuch von OpenRussian.org und stehen unter der Lizenz CC BY-SA 4.0. Änderungen: Auswahl der häufigsten Verben, vereinheitlichte Betonungszeichen, ausgeschlossene oder korrigierte Einträge. Die angepassten Daten werden unter derselben Lizenz weitergegeben.</string>
     <string name="about_code_title">Quellcode</string>
     <string name="about_code_text">Glagolik steht unter der Apache License 2.0.</string>
+    <string name="training_title">Training</string>
+    <string name="training_progress">%1$d / %2$d</string>
+    <string name="training_start">Training starten</string>
+    <string name="training_close">Training beenden</string>
+    <string name="training_new_form">Neue Form</string>
+    <string name="training_prompt">%1$s …</string>
+    <string name="training_answer_label">Deine Antwort</string>
+    <string name="training_check">Prüfen</string>
+    <string name="training_continue">Weiter</string>
+    <string name="training_easy">Leicht</string>
+    <string name="training_correct">Richtig</string>
+    <string name="training_incorrect">Nicht ganz. Richtig ist:</string>
+    <string name="training_yo_hint">Hinweis: wird mit ё geschrieben.</string>
+    <string name="training_latin_letters">Lateinische Buchstaben in deiner Antwort: %1$s. Bitte die russische Tastatur verwenden.</string>
+    <string name="training_empty_answer">Bitte gib eine Antwort ein.</string>
+    <string name="training_nothing_title">Für heute ist alles erledigt</string>
+    <string name="training_nothing_text">Keine Formen sind fällig. In den Einstellungen kannst du mehr neue Formen pro Tag erlauben.</string>
+    <string name="training_finished_title">Session abgeschlossen</string>
+    <string name="training_done">Fertig</string>
+
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_new_forms">Neue Formen pro Tag</string>
+    <string name="settings_session_size">Karten pro Session</string>
+    <string name="settings_strict_yo">Strenges ё</string>
+    <string name="settings_strict_yo_summary">е statt ё als falsch werten</string>
+    <string name="settings_tenses">Abgefragte Zeitformen</string>
+    <string name="settings_tenses_hint">Mindestens eine Zeitform bleibt ausgewählt.</string>
+    <string name="settings_decrease">Verringern</string>
+    <string name="settings_increase">Erhöhen</string>
+    <plurals name="training_finished_text">
+        <item quantity="one">%1$d von %2$d Form beim ersten Versuch richtig.</item>
+        <item quantity="other">%1$d von %2$d Formen beim ersten Versuch richtig.</item>
+    </plurals>
 </resources>

@@ -1,13 +1,27 @@
 package io.github.eleasarb.glagolik.testing
 
+import io.github.eleasarb.glagolik.data.db.TrainableFormRow
 import io.github.eleasarb.glagolik.data.db.VerbDao
 import io.github.eleasarb.glagolik.data.db.VerbEntity
 import io.github.eleasarb.glagolik.data.db.VerbFormEntity
+import io.github.eleasarb.glagolik.data.repository.ProgressRepository
 import io.github.eleasarb.glagolik.data.repository.VerbRepository
+import io.github.eleasarb.glagolik.data.settings.SettingsRepository
 import io.github.eleasarb.glagolik.domain.model.Aspect
+import io.github.eleasarb.glagolik.domain.model.FormKey
+import io.github.eleasarb.glagolik.domain.model.FormRef
+import io.github.eleasarb.glagolik.domain.model.ScheduledCard
+import io.github.eleasarb.glagolik.domain.model.Tense
+import io.github.eleasarb.glagolik.domain.model.TrainableForm
+import io.github.eleasarb.glagolik.domain.model.TrainingSettings
 import io.github.eleasarb.glagolik.domain.model.Translation
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
 import io.github.eleasarb.glagolik.domain.model.VerbSummary
+import io.github.eleasarb.glagolik.domain.srs.FsrsScheduler
+import io.github.eleasarb.glagolik.domain.srs.Rating
+import io.github.eleasarb.glagolik.domain.srs.SrsCard
+import java.time.Duration
+import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -41,6 +55,24 @@ class FakeVerbDao(
     override suspend fun getPartners(verbId: Int): List<VerbEntity> =
         partners[verbId].orEmpty().mapNotNull { id -> verbs.firstOrNull { it.id == id } }
 
+    override suspend fun getTrainableForms(): List<TrainableFormRow> =
+        verbs.filter { it.isCore }.sortedBy { it.frequencyRank }.flatMap { verb ->
+            forms.filter { it.verbId == verb.id && it.isTrainable }
+                .sortedWith(compareBy({ it.form }, { it.variant }))
+                .map { form ->
+                    TrainableFormRow(
+                        verbId = verb.id,
+                        infinitive = verb.infinitive,
+                        aspect = verb.aspect,
+                        translationEn = verb.translationEn,
+                        translationDe = verb.translationDe,
+                        form = form.form,
+                        variant = form.variant,
+                        value = form.value,
+                    )
+                }
+        }
+
     private fun VerbEntity.matches(query: String): Boolean =
         listOf(infinitiveBare, translationDe, translationEn).any { it.contains(query) }
 }
@@ -49,6 +81,7 @@ class FakeVerbDao(
 class FakeVerbRepository(
     private val verbs: List<VerbSummary>,
     private val details: Map<Int, VerbDetail> = emptyMap(),
+    private val trainable: List<TrainableForm> = emptyList(),
 ) : VerbRepository {
     private val source = MutableStateFlow(verbs)
 
@@ -56,7 +89,76 @@ class FakeVerbRepository(
         source.map { all -> all.filter { it.infinitive.startsWith(query) } }
 
     override suspend fun getVerbDetail(id: Int): VerbDetail? = details[id]
+
+    override suspend fun getTrainableForms(): List<TrainableForm> = trainable
 }
+
+/** Progress backed by a map, using the real FSRS scheduler without fuzz. */
+class FakeProgressRepository(private val scheduler: FsrsScheduler = FsrsScheduler(fuzz = null)) :
+    ProgressRepository {
+    val cards = linkedMapOf<FormRef, SrsCard>()
+    val introducedAt = mutableMapOf<FormRef, Instant>()
+    val reviews = mutableListOf<Pair<FormRef, Rating>>()
+
+    override suspend fun getCard(ref: FormRef): SrsCard? = cards[ref]
+
+    override suspend fun recordReview(
+        ref: FormRef,
+        rating: Rating,
+        at: Instant,
+        duration: Duration?,
+    ): SrsCard {
+        val reviewed = scheduler.review(cards[ref] ?: SrsCard(due = at), rating, at)
+        cards[ref] = reviewed
+        introducedAt.putIfAbsent(ref, at)
+        reviews += ref to rating
+        return reviewed
+    }
+
+    override suspend fun getDueCards(now: Instant, limit: Int): List<ScheduledCard> =
+        cards.filterValues { !it.due.isAfter(now) }
+            .entries.sortedBy { it.value.due }
+            .take(limit)
+            .map { ScheduledCard(it.key, it.value) }
+
+    override suspend fun getKnownForms(): Set<FormRef> = cards.keys.toSet()
+
+    override suspend fun countIntroducedSince(since: Instant): Int =
+        introducedAt.values.count { !it.isBefore(since) }
+}
+
+class FakeSettingsRepository(initial: TrainingSettings = TrainingSettings()) : SettingsRepository {
+    private val state = MutableStateFlow(initial)
+
+    override val settings: Flow<TrainingSettings> = state
+
+    override suspend fun setNewFormsPerDay(value: Int) {
+        state.value = state.value.copy(newFormsPerDay = value)
+    }
+
+    override suspend fun setSessionSize(value: Int) {
+        state.value = state.value.copy(sessionSize = value)
+    }
+
+    override suspend fun setStrictYo(value: Boolean) {
+        state.value = state.value.copy(strictYo = value)
+    }
+
+    override suspend fun setTenses(tenses: Set<Tense>) {
+        if (tenses.isNotEmpty()) state.value = state.value.copy(tenses = tenses)
+    }
+}
+
+fun trainableForm(
+    verbId: Int,
+    form: FormKey,
+    vararg expected: String,
+    infinitive: String = "verb$verbId",
+): TrainableForm = TrainableForm(
+    ref = FormRef(verbId, form),
+    verb = verbSummary(verbId, infinitive),
+    expected = expected.toList(),
+)
 
 fun verbEntity(
     id: Int,
