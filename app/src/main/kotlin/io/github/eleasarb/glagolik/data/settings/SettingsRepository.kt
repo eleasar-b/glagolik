@@ -26,6 +26,9 @@ interface SettingsRepository {
 
     /** Ignored if [tenses] is empty: at least one tense must stay selected. */
     suspend fun setTenses(tenses: Set<Tense>)
+
+    /** Replaces all settings at once (import). Values are clamped like the setters. */
+    suspend fun replaceAll(settings: TrainingSettings)
 }
 
 /** Stored in `files/datastore/settings.preferences_pb`, included in backups. */
@@ -49,6 +52,18 @@ class DataStoreSettingsRepository @Inject constructor(
     override suspend fun setTenses(tenses: Set<Tense>) {
         if (tenses.isEmpty()) return
         dataStore.edit { prefs -> prefs[TENSES] = tenses.mapTo(mutableSetOf()) { it.name } }
+    }
+
+    override suspend fun replaceAll(settings: TrainingSettings) {
+        dataStore.edit { prefs ->
+            prefs[NEW_FORMS_PER_DAY] =
+                settings.newFormsPerDay.coerceIn(TrainingSettings.NEW_FORMS_RANGE)
+            prefs[SESSION_SIZE] = settings.sessionSize.coerceIn(TrainingSettings.SESSION_SIZE_RANGE)
+            prefs[STRICT_YO] = settings.strictYo
+            if (settings.tenses.isNotEmpty()) {
+                prefs[TENSES] = settings.tenses.mapTo(mutableSetOf()) { it.name }
+            }
+        }
     }
 
     private fun Preferences.toSettings(): TrainingSettings {

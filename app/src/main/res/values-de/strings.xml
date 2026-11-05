@@ -56,4 +56,23 @@
         <item quantity="one">%1$d von %2$d Form beim ersten Versuch richtig.</item>
         <item quantity="other">%1$d von %2$d Formen beim ersten Versuch richtig.</item>
     </plurals>
+    <string name="backup_title">Datensicherung</string>
+    <string name="backup_text">Exportiere Fortschritt und Einstellungen in eine Datei deiner Wahl (Ordner, USB-Stick, Cloud-App). Der Import ersetzt den aktuellen Fortschritt.</string>
+    <string name="backup_export">Exportieren</string>
+    <string name="backup_import">Importieren</string>
+    <string name="backup_working">Wird ausgeführt…</string>
+    <plurals name="backup_exported">
+        <item quantity="one">Exportiert: %1$d Form.</item>
+        <item quantity="other">Exportiert: %1$d Formen.</item>
+    </plurals>
+    <plurals name="backup_imported">
+        <item quantity="one">Importiert: %1$d Form.</item>
+        <item quantity="other">Importiert: %1$d Formen.</item>
+    </plurals>
+    <string name="backup_invalid_file">Das ist kein gültiger Glagolik-Export. Es wurde nichts geändert.</string>
+    <string name="backup_failed">Die Datei konnte nicht gelesen oder geschrieben werden.</string>
+    <string name="backup_import_confirm_title">Fortschritt ersetzen?</string>
+    <string name="backup_import_confirm_text">Dein aktueller Fortschritt und deine Einstellungen werden durch den Inhalt der Datei ersetzt.</string>
+    <string name="backup_import_confirm">Ersetzen</string>
+    <string name="backup_cancel">Abbrechen</string>
 </resources>

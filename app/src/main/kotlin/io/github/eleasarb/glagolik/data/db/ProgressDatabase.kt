@@ -21,6 +21,8 @@ import androidx.room.RoomDatabase.JournalMode
 abstract class ProgressDatabase : RoomDatabase() {
     abstract fun progressDao(): ProgressDao
 
+    abstract fun progressBackupDao(): ProgressBackupDao
+
     companion object {
         const val VERSION = 1
         const val NAME = "progress.db"
