@@ -128,6 +128,10 @@ io/github/eleasarb/glagolik/
 - **Backup:** nur `progress.db` und `datastore/settings.preferences_pb` (Cloud-Backup und
   Gerätewechsel, auch Seedvault). `progress.db` läuft im Journal-Modus TRUNCATE, damit
   alles in einer Datei liegt. `verbs.db` wird nie gesichert.
+- **Export/Import:** in den Einstellungen, als JSON-Datei (`glagolik-progress`, Version 1,
+  siehe `ProgressBackupCodec`) über die Dateiauswahl des Systems (Storage Access
+  Framework, keine Berechtigung). Der Import prüft die ganze Datei zuerst und ersetzt
+  dann Fortschritt und Einstellungen in einem Schritt, nach Bestätigung.
 - **Sessions:** Die Sessionlänge ist frei wählbar (Anzahl Karten oder Minuten).
   Fällige Karten kommen zuerst, neue Karten sind pro Tag begrenzt.
 - **Filter:**

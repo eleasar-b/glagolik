@@ -1,5 +1,6 @@
 package io.github.eleasarb.glagolik.di
 
+import android.content.ContentResolver
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -11,6 +12,9 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import io.github.eleasarb.glagolik.data.backup.BackupRepository
+import io.github.eleasarb.glagolik.data.backup.DocumentBackupRepository
+import io.github.eleasarb.glagolik.data.db.ProgressBackupDao
 import io.github.eleasarb.glagolik.data.db.ProgressDao
 import io.github.eleasarb.glagolik.data.db.ProgressDatabase
 import io.github.eleasarb.glagolik.data.db.VerbDao
@@ -44,6 +48,10 @@ object DatabaseModule {
 
     @Provides
     fun provideProgressDao(database: ProgressDatabase): ProgressDao = database.progressDao()
+
+    @Provides
+    fun provideProgressBackupDao(database: ProgressDatabase): ProgressBackupDao =
+        database.progressBackupDao()
 }
 
 @Module
@@ -75,6 +83,14 @@ object SettingsModule {
 
 @Module
 @InstallIn(SingletonComponent::class)
+object BackupModule {
+    @Provides
+    fun provideContentResolver(@ApplicationContext context: Context): ContentResolver =
+        context.contentResolver
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
 interface RepositoryModule {
     @Binds
     fun bindVerbRepository(repository: OfflineVerbRepository): VerbRepository
@@ -84,4 +100,7 @@ interface RepositoryModule {
 
     @Binds
     fun bindSettingsRepository(repository: DataStoreSettingsRepository): SettingsRepository
+
+    @Binds
+    fun bindBackupRepository(repository: DocumentBackupRepository): BackupRepository
 }

@@ -147,6 +147,10 @@ class FakeSettingsRepository(initial: TrainingSettings = TrainingSettings()) : S
     override suspend fun setTenses(tenses: Set<Tense>) {
         if (tenses.isNotEmpty()) state.value = state.value.copy(tenses = tenses)
     }
+
+    override suspend fun replaceAll(settings: TrainingSettings) {
+        state.value = settings
+    }
 }
 
 fun trainableForm(

@@ -1,14 +1,17 @@
 package io.github.eleasarb.glagolik.ui.settings
 
 import android.content.Context
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import io.github.eleasarb.glagolik.R
+import io.github.eleasarb.glagolik.data.backup.BackupSummary
 import io.github.eleasarb.glagolik.domain.model.Tense
 import io.github.eleasarb.glagolik.domain.model.TrainingSettings
 import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
@@ -75,6 +78,49 @@ class SettingsScreenTest {
         assertEquals(Tense.PAST, toggled)
     }
 
+    @Test
+    fun `export and import buttons report clicks`() {
+        var exported = false
+        var imported = false
+        show(TrainingSettings(), onExportClick = { exported = true }, onImportClick = {
+            imported =
+                true
+        })
+
+        compose.onNodeWithText(
+            context.getString(R.string.backup_export),
+        ).performScrollTo().performClick()
+        compose.onNodeWithText(
+            context.getString(R.string.backup_import),
+        ).performScrollTo().performClick()
+
+        assertEquals(true, exported)
+        assertEquals(true, imported)
+    }
+
+    @Test
+    fun `backup results are shown`() {
+        show(TrainingSettings(), backupStatus = BackupStatus.Exported(BackupSummary(3, 10)))
+        val exported = context.resources.getQuantityString(R.plurals.backup_exported, 3, 3)
+        compose.onNodeWithText(exported).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun `invalid import file is explained`() {
+        show(TrainingSettings(), backupStatus = BackupStatus.InvalidFile)
+        compose.onNodeWithText(context.getString(R.string.backup_invalid_file))
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun `buttons are disabled while working`() {
+        show(TrainingSettings(), backupStatus = BackupStatus.Working)
+        compose.onNodeWithText(context.getString(R.string.backup_export))
+            .performScrollTo()
+            .assertIsNotEnabled()
+    }
+
     private fun label(action: Int, setting: Int): String =
         "${context.getString(action)} ${context.getString(setting)}"
 
@@ -84,15 +130,20 @@ class SettingsScreenTest {
         onSessionSizeChange: (Int) -> Unit = {},
         onStrictYoChange: (Boolean) -> Unit = {},
         onTenseToggle: (Tense) -> Unit = {},
+        backupStatus: BackupStatus? = null,
+        onExportClick: () -> Unit = {},
+        onImportClick: () -> Unit = {},
     ) {
         compose.setContent {
             GlagolikTheme(dynamicColor = false) {
                 SettingsScreen(
-                    settings = settings,
+                    uiState = SettingsUiState(settings, backupStatus),
                     onNewFormsPerDayChange = onNewFormsPerDayChange,
                     onSessionSizeChange = onSessionSizeChange,
                     onStrictYoChange = onStrictYoChange,
                     onTenseToggle = onTenseToggle,
+                    onExportClick = onExportClick,
+                    onImportClick = onImportClick,
                     onBack = {},
                 )
             }
