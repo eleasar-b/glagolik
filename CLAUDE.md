@@ -233,7 +233,9 @@ die **Compose API Guidelines**.
   3. lint
   4. Unit-Tests (App und Importer), danach `verifyVerbs`
   5. `assembleDebug`
-  Das Debug-APK wird als Artefakt hochgeladen (14 Tage). Signiert wird es mit dem
+  Das Debug-APK wird als Artefakt hochgeladen (14 Tage). Debug-Builds haben die ID
+  `io.github.eleasarb.glagolik.debug`, heissen „Glagolik Debug“ und haben ein
+  schiefergraues Icon, damit sie neben der Release-App installiert werden können. Signiert wird es mit dem
   gemeinsamen Debug-Keystore aus dem Secret `GLAGOLIK_DEBUG_KEYSTORE_BASE64`, damit
   Updates ohne Deinstallation funktionieren.
 - **Release** (release-please, `.github/workflows/release-please.yml`):

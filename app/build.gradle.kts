@@ -38,6 +38,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Separate app id, name and icon colour, so debug and release builds can be
+            // installed side by side (they are signed with different keys).
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
             if (releaseKeystorePath != null) {
                 signingConfig = signingConfigs.getByName("release")

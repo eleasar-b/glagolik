@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Slate instead of burgundy: debug launcher icon differs from the release app. -->
+    <color name="ic_launcher_background">#3F4A5A</color>
+</resources>
