@@ -1,15 +1,27 @@
-name: Release
+name: Release APK
 
+# Builds the signed release APK for an existing GitHub release and attaches it.
+# Called by release-please.yml when a release PR is merged; can be re-run by hand
+# (Actions -> Release APK -> Run workflow), e.g. after the signing secrets were fixed.
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag, e.g. v0.1.0
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, e.g. v0.1.0
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-apk-${{ inputs.tag }}
   cancel-in-progress: false
 
 jobs:
@@ -17,18 +29,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
+      TAG: ${{ inputs.tag }}
       GLAGOLIK_KEYSTORE_PATH: ${{ github.workspace }}/../release.keystore
       GLAGOLIK_KEYSTORE_PASSWORD: ${{ secrets.GLAGOLIK_KEYSTORE_PASSWORD }}
       GLAGOLIK_KEY_ALIAS: ${{ secrets.GLAGOLIK_KEY_ALIAS }}
       GLAGOLIK_KEY_PASSWORD: ${{ secrets.GLAGOLIK_KEY_PASSWORD }}
     steps:
-      - name: Checkout
+      - name: Checkout release tag
         uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
 
       - name: Derive version from tag
         id: version
         run: |
-          tag="${GITHUB_REF_NAME}"
+          tag="${TAG}"
           if [[ ! "$tag" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
             echo "::error::Tag '$tag' is not of the form vMAJOR.MINOR.PATCH"
             exit 1
@@ -92,16 +107,14 @@ jobs:
             exit 1
           fi
 
-      - name: Create GitHub release
+      - name: Attach APK to the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          out="glagolik-${GITHUB_REF_NAME}.apk"
+          out="glagolik-${TAG}.apk"
           cp app/build/outputs/apk/release/app-release.apk "$out"
           sha256sum "$out" > "$out.sha256"
-          gh release create "$GITHUB_REF_NAME" "$out" "$out.sha256" \
-            --title "Glagolik ${GITHUB_REF_NAME}" \
-            --generate-notes
+          gh release upload "$TAG" "$out" "$out.sha256" --clobber
 
       - name: Remove keystore
         if: always()
