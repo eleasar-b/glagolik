@@ -11,8 +11,15 @@ Development guidelines: [CLAUDE.md](CLAUDE.md)
 ## Builds
 
 - **Pull requests / main:** CI uploads a debug APK as workflow artifact (`glagolik-debug-…`).
-- **Releases:** pushing a tag `vX.Y.Z` builds a signed release APK and publishes it as
-  GitHub Release, together with a SHA-256 checksum.
+- **Releases:** [release-please](https://github.com/googleapis/release-please) keeps a
+  release PR open (version + `CHANGELOG.md` from Conventional Commits). Merging it creates
+  the tag `vX.Y.Z` and the GitHub Release; the signed APK and its SHA-256 are attached.
+  If the APK build failed (e.g. missing secrets), re-run *Actions → Release APK* with the tag.
+
+### One-time repository setting
+
+*Settings → Actions → General → Workflow permissions*: enable
+"Allow GitHub Actions to create and approve pull requests" (needed for the release PR).
 
 ### Debug signing
 

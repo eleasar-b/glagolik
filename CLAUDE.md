@@ -236,8 +236,14 @@ die **Compose API Guidelines**.
   Das Debug-APK wird als Artefakt hochgeladen (14 Tage). Signiert wird es mit dem
   gemeinsamen Debug-Keystore aus dem Secret `GLAGOLIK_DEBUG_KEYSTORE_BASE64`, damit
   Updates ohne Deinstallation funktionieren.
-- **Release** (`.github/workflows/release.yml`):
-  - Tag `vX.Y.Z` erzeugt ein signiertes Release-APK als GitHub Release.
+- **Release** (release-please, `.github/workflows/release-please.yml`):
+  - Nach jedem Merge auf `main` pflegt release-please einen Release-PR mit nächster
+    Version und `CHANGELOG.md`, abgeleitet aus den Conventional Commits
+    (`feat` = Minor, `fix` = Patch; vor 1.0 macht ein Breaking Change nur Minor).
+  - Merge des Release-PR = Release: Tag `vX.Y.Z` und GitHub Release entstehen, danach
+    baut `release.yml` das signierte APK und hängt es samt SHA-256 an.
+  - `release.yml` lässt sich für einen bestehenden Tag manuell erneut starten.
+  - Version ausschliesslich über release-please, nie Tags von Hand setzen.
   - `versionName` = Tag ohne `v`, `versionCode` = `MAJOR*10000 + MINOR*100 + PATCH`.
   - Signing über die Secrets `GLAGOLIK_KEYSTORE_BASE64`, `GLAGOLIK_KEYSTORE_PASSWORD`,
     `GLAGOLIK_KEY_ALIAS`, `GLAGOLIK_KEY_PASSWORD`. Ohne Secrets bricht der Release ab.
