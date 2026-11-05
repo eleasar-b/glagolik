@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Debug builds are labelled so they can be told apart from the release app. -->
+    <string name="app_name" translatable="false">Glagolik Debug</string>
+</resources>
