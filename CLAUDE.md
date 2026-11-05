@@ -227,6 +227,8 @@ die **Compose API Guidelines**.
 
 - **Hosting:** GitHub, Trunk-based mit kurzlebigen Feature-Branches und PRs auf `main`.
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `chore:`, `docs:`).
+- **Merge:** nur Squash-Merge, Commit-Nachricht = PR-Titel. Der PR-Titel muss deshalb ein
+  Conventional Commit sein, er landet so im Changelog.
 - **CI:** GitHub Actions führt pro PR in dieser Reihenfolge aus:
   1. ktlint
   2. detekt
