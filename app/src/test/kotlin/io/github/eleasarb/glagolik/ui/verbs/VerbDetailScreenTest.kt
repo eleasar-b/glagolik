@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -15,6 +16,7 @@ import io.github.eleasarb.glagolik.R
 import io.github.eleasarb.glagolik.domain.model.Aspect
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
 import io.github.eleasarb.glagolik.domain.model.FormKey
+import io.github.eleasarb.glagolik.domain.model.MasteryLevel
 import io.github.eleasarb.glagolik.domain.model.Translation
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
 import io.github.eleasarb.glagolik.domain.model.VerbSummary
@@ -53,6 +55,36 @@ class VerbDetailScreenTest {
         ),
         partners = emptyList(),
     )
+
+    @Test
+    fun `trained forms show their level and the verb a summary`() {
+        show(
+            VerbDetailUiState.Success(
+                verb = podnyat,
+                mastery = mapOf(
+                    FormKey.FUTURE_SG1 to MasteryLevel.MATURE,
+                    FormKey.PAST_M to MasteryLevel.LEARNING,
+                    FormKey.IMPERATIVE_SG to MasteryLevel.NEW,
+                ),
+            ),
+        )
+
+        val summary = context.resources.getQuantityString(R.plurals.mastery_summary, 3, 1, 3)
+        compose.onNodeWithText(summary).assertIsDisplayed()
+        compose.onNodeWithContentDescription(context.getString(R.string.mastery_mature))
+            .assertExists()
+        compose.onNodeWithContentDescription(context.getString(R.string.mastery_learning))
+            .assertExists()
+    }
+
+    @Test
+    fun `untrained forms have no level`() {
+        val mastery = mapOf(FormKey.FUTURE_SG1 to MasteryLevel.NEW)
+        show(VerbDetailUiState.Success(byt, mastery = mastery))
+
+        compose.onAllNodesWithContentDescription(context.getString(R.string.mastery_new))
+            .assertCountEquals(1)
+    }
 
     @Test
     fun `only tenses with forms are shown`() {
