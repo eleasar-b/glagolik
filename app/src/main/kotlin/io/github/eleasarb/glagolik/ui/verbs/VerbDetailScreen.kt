@@ -27,7 +27,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -36,10 +39,15 @@ import io.github.eleasarb.glagolik.R
 import io.github.eleasarb.glagolik.domain.model.Aspect
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
 import io.github.eleasarb.glagolik.domain.model.FormKey
+import io.github.eleasarb.glagolik.domain.model.MasteryCounts
+import io.github.eleasarb.glagolik.domain.model.MasteryLevel
 import io.github.eleasarb.glagolik.domain.model.Tense
 import io.github.eleasarb.glagolik.domain.model.Translation
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
 import io.github.eleasarb.glagolik.domain.model.VerbSummary
+import io.github.eleasarb.glagolik.ui.components.MasteryBar
+import io.github.eleasarb.glagolik.ui.components.MasteryDot
+import io.github.eleasarb.glagolik.ui.components.labelRes
 import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
 
 private const val VARIANT_SEPARATOR = " · "
@@ -103,6 +111,8 @@ fun VerbDetailScreen(
 
             is VerbDetailUiState.Success -> VerbDetailContent(
                 verb = uiState.verb,
+                mastery = uiState.mastery,
+                masteryCounts = uiState.masteryCounts,
                 onPartnerClick = onPartnerClick,
                 modifier = contentModifier,
             )
@@ -113,6 +123,8 @@ fun VerbDetailScreen(
 @Composable
 private fun VerbDetailContent(
     verb: VerbDetail,
+    mastery: Map<FormKey, MasteryLevel>,
+    masteryCounts: MasteryCounts,
     onPartnerClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -123,12 +135,13 @@ private fun VerbDetailContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         VerbHeader(summary = verb.summary)
+        if (masteryCounts.total > 0) VerbMasterySummary(counts = masteryCounts)
         if (verb.partners.isNotEmpty()) {
             PartnerChips(partners = verb.partners, onPartnerClick = onPartnerClick)
         }
         Tense.entries.forEach { tense ->
             val forms = verb.formsOf(tense)
-            if (forms.isNotEmpty()) TenseCard(tense = tense, forms = forms)
+            if (forms.isNotEmpty()) TenseCard(tense = tense, forms = forms, mastery = mastery)
         }
     }
 }
@@ -182,7 +195,29 @@ private fun PartnerChips(
 }
 
 @Composable
-private fun TenseCard(tense: Tense, forms: List<ConjugatedForm>, modifier: Modifier = Modifier) {
+private fun VerbMasterySummary(counts: MasteryCounts, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        MasteryBar(counts = counts, modifier = Modifier.fillMaxWidth(), height = 8.dp)
+        Text(
+            text = pluralStringResource(
+                R.plurals.mastery_summary,
+                counts.total,
+                counts.mature,
+                counts.total,
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun TenseCard(
+    tense: Tense,
+    forms: List<ConjugatedForm>,
+    mastery: Map<FormKey, MasteryLevel>,
+    modifier: Modifier = Modifier,
+) {
     Card(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -190,7 +225,7 @@ private fun TenseCard(tense: Tense, forms: List<ConjugatedForm>, modifier: Modif
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
-            forms.forEach { form -> FormRow(form = form) }
+            forms.forEach { form -> FormRow(form = form, level = mastery[form.key]) }
             if (forms.any { !it.isTrainable }) {
                 Text(
                     text = stringResource(R.string.forms_not_trained),
@@ -203,14 +238,18 @@ private fun TenseCard(tense: Tense, forms: List<ConjugatedForm>, modifier: Modif
     }
 }
 
+/** [level] is `null` for forms that are not trained. */
 @Composable
-private fun FormRow(form: ConjugatedForm, modifier: Modifier = Modifier) {
+private fun FormRow(form: ConjugatedForm, level: MasteryLevel?, modifier: Modifier = Modifier) {
     val color = if (form.isTrainable) {
         MaterialTheme.colorScheme.onSurface
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }
-    Row(modifier = modifier.padding(vertical = 2.dp)) {
+    Row(
+        modifier = modifier.padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(
             text = stringResource(form.key.pronounRes()),
             style = MaterialTheme.typography.bodyMedium,
@@ -221,7 +260,15 @@ private fun FormRow(form: ConjugatedForm, modifier: Modifier = Modifier) {
             text = form.variants.joinToString(VARIANT_SEPARATOR),
             style = MaterialTheme.typography.bodyLarge,
             color = color,
+            modifier = Modifier.weight(1f),
         )
+        if (level != null) {
+            val description = stringResource(level.labelRes())
+            MasteryDot(
+                level = level,
+                modifier = Modifier.semantics { contentDescription = description },
+            )
+        }
     }
 }
 
@@ -248,7 +295,15 @@ private fun VerbDetailScreenPreview() {
     )
     GlagolikTheme(dynamicColor = false) {
         VerbDetailScreen(
-            uiState = VerbDetailUiState.Success(detail),
+            uiState = VerbDetailUiState.Success(
+                verb = detail,
+                mastery = mapOf(
+                    FormKey.FUTURE_SG1 to MasteryLevel.MATURE,
+                    FormKey.FUTURE_SG2 to MasteryLevel.YOUNG,
+                    FormKey.PAST_M to MasteryLevel.LEARNING,
+                    FormKey.IMPERATIVE_SG to MasteryLevel.NEW,
+                ),
+            ),
             onBack = {},
             onPartnerClick = {},
         )

@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ProgressDao {
@@ -17,6 +18,12 @@ interface ProgressDao {
 
     @Query("SELECT * FROM card")
     suspend fun getAllCards(): List<CardEntity>
+
+    @Query("SELECT * FROM card")
+    fun observeAllCards(): Flow<List<CardEntity>>
+
+    @Query("SELECT * FROM card WHERE verb_id = :verbId")
+    fun observeCards(verbId: Int): Flow<List<CardEntity>>
 
     @Query("SELECT COUNT(*) FROM card WHERE introduced_at >= :since")
     suspend fun countIntroducedSince(since: Long): Int
