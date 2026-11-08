@@ -70,6 +70,7 @@
     <string name="training_correct">Correct</string>
     <string name="training_incorrect">Not quite. Correct is:</string>
     <string name="training_yo_hint">Note: written with ё.</string>
+    <string name="training_tense_forms">%1$s: all forms</string>
     <!-- %1$s: the Latin letters found in the answer -->
     <string name="training_latin_letters">Latin letters in your answer: %1$s. Please use the Russian keyboard.</string>
     <string name="training_empty_answer">Please enter an answer.</string>
