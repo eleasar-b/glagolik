@@ -90,22 +90,24 @@ class VerbListScreenTest {
         ),
         dueNow = 5,
         meaning = MasteryCounts(new = 6, young = 1, mature = 1),
-        startedVerbs = 1,
-        totalVerbs = 2,
+        verbs = MasteryCounts(new = 1, learning = 1),
     )
 
     @Test
-    fun `overview shows learned cards with share, started verbs and the due cards`() {
+    fun `overview shows learned cards, started verbs and a due chip`() {
         show(VerbListUiState(verbs = verbs, isLoading = false, mastery = mastery))
 
         compose.onNodeWithText(context.getString(R.string.mastery_title)).assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.mastery_due, 5)).assertIsDisplayed()
+        compose.onNodeWithText(
+            context.resources.getQuantityString(R.plurals.mastery_due, 5, 5),
+        ).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.mastery_forms)).assertIsDisplayed()
         // Learned = learning + young + mature, rounded down.
         compose.onNodeWithText("9 of 39 learned · 23%").assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.mastery_meaning)).assertIsDisplayed()
         compose.onNodeWithText("2 of 8 learned · 25%").assertIsDisplayed()
-        compose.onNodeWithText("Verbs started: 1 of 2").assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.mastery_verbs)).assertIsDisplayed()
+        compose.onNodeWithText("1 of 2 started · 50%").assertIsDisplayed()
         val meaningBar =
             context.resources.getQuantityString(R.plurals.mastery_summary_cards, 8, 1, 8)
         compose.onNodeWithContentDescription(meaningBar).assertIsDisplayed()

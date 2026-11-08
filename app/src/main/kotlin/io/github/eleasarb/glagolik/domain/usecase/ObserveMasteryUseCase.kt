@@ -7,6 +7,7 @@ import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.model.MasteryOverview
 import io.github.eleasarb.glagolik.domain.model.masteryLevel
+import io.github.eleasarb.glagolik.domain.model.verbLevel
 import io.github.eleasarb.glagolik.domain.srs.SrsCard
 import java.time.Clock
 import java.time.Duration
@@ -74,7 +75,10 @@ internal fun overview(
         byVerb = refs.forms.groupBy { it.verbId }.mapValues { (_, keys) -> counts(keys) },
         dueNow = all.count { key -> cards[key]?.let { !it.due.isAfter(now) } ?: false },
         meaning = counts(refs.meaning),
-        startedVerbs = all.filter { it in cards }.distinctBy { it.verbId }.size,
-        totalVerbs = all.distinctBy { it.verbId }.size,
+        verbs = MasteryCounts.of(
+            all.groupBy { it.verbId }.values.map { keys ->
+                verbLevel(keys.map { cards[it].masteryLevel() })
+            },
+        ),
     )
 }

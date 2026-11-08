@@ -99,7 +99,9 @@ class VerbDetailScreenTest {
             onSpeak = { spoken = it },
         )
 
-        compose.onNodeWithText(context.getString(R.string.mastery_due, 1)).assertIsDisplayed()
+        compose.onNodeWithText(
+            context.resources.getQuantityString(R.plurals.mastery_due, 1, 1),
+        ).assertIsDisplayed()
         compose.onNodeWithText(string(R.string.mastery_meaning)).assertIsDisplayed()
         compose.onNodeWithText("1 of 2 learned · 50%").assertIsDisplayed()
         compose.onNodeWithText(string(R.string.verb_infinitive)).performScrollTo()

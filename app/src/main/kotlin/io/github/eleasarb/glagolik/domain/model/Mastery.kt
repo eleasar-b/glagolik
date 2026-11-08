@@ -76,8 +76,17 @@ data class MasteryOverview(
     val dueNow: Int,
     /** Both meaning directions of every verb that takes part. */
     val meaning: MasteryCounts = MasteryCounts(),
-    /** Verbs with at least one answered card (form or meaning). */
-    val startedVerbs: Int = 0,
-    /** Verbs with at least one trainable card. */
-    val totalVerbs: Int = 0,
+    /** Verbs with at least one trainable card, each at its [verbLevel]. */
+    val verbs: MasteryCounts = MasteryCounts(),
 )
+
+/**
+ * Level of a whole verb from the levels of its cards: new until a card was answered, mature or
+ * young only when every card is, otherwise learning. A started verb is [MasteryCounts.learned].
+ */
+fun verbLevel(cards: Collection<MasteryLevel>): MasteryLevel = when {
+    cards.all { it == MasteryLevel.NEW } -> MasteryLevel.NEW
+    cards.all { it == MasteryLevel.MATURE } -> MasteryLevel.MATURE
+    cards.all { it >= MasteryLevel.YOUNG } -> MasteryLevel.YOUNG
+    else -> MasteryLevel.LEARNING
+}
