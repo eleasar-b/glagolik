@@ -46,7 +46,6 @@ import io.github.eleasarb.glagolik.domain.usecase.MeaningChoiceTask
 import io.github.eleasarb.glagolik.domain.usecase.MeaningRecallTask
 import io.github.eleasarb.glagolik.domain.usecase.SessionCard
 import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
-import io.github.eleasarb.glagolik.ui.verbs.localized
 
 @Composable
 fun TrainingRoute(
@@ -194,18 +193,13 @@ private fun QuestionContent(
                 )
             }
             val feedback = state.feedback
-            if (feedback is AnswerResult.Correct || feedback is AnswerResult.Incorrect) {
-                // RU→DE: the answer is the translation; the speaker sits next to the
-                // Russian infinitive in the prompt instead.
-                val choice = task is MeaningChoiceTask
+            // RU→DE needs no feedback card: the options are marked green and red.
+            val typed = task !is MeaningChoiceTask
+            if (typed && (feedback is AnswerResult.Correct || feedback is AnswerResult.Incorrect)) {
                 FeedbackCard(
                     feedback = feedback,
-                    answer = if (choice) {
-                        task.verb.translation.localized()
-                    } else {
-                        feedback.russianAnswer()
-                    },
-                    onSpeak = onSpeak.takeIf { state.canSpeak && !choice },
+                    answer = feedback.russianAnswer(),
+                    onSpeak = onSpeak.takeIf { state.canSpeak },
                 )
             }
             if (feedback is AnswerResult.Incorrect && task is ConjugationTask &&

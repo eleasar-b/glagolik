@@ -83,7 +83,7 @@ fun ProgressCard(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                 )
-                DueChip(dueNow = dueNow)
+                if (dueNow > 0) DueChip(dueNow = dueNow)
             }
             KindMastery(
                 label = stringResource(R.string.mastery_forms),

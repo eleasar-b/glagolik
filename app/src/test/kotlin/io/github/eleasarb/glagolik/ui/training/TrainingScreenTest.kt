@@ -274,7 +274,9 @@ class TrainingScreenTest {
         compose.onNode(
             hasText("wait, expect") and hasStateDescription(string(R.string.training_option_wrong)),
         ).assertIsDisplayed().assertIsNotEnabled()
-        compose.onNodeWithText("say, tell, speak, talk").performScrollTo().assertIsDisplayed()
+        // No feedback card below the options.
+        compose.onNodeWithText("say, tell, speak, talk").assertDoesNotExist()
+        compose.onNodeWithText(string(R.string.training_incorrect)).assertDoesNotExist()
         compose.onNodeWithText(string(R.string.training_easy)).assertDoesNotExist()
     }
 

@@ -94,6 +94,15 @@ class VerbListScreenTest {
     )
 
     @Test
+    fun `no due chip when nothing is due`() {
+        show(VerbListUiState(verbs = verbs, isLoading = false, mastery = mastery.copy(dueNow = 0)))
+
+        val due = context.resources.getQuantityString(R.plurals.mastery_due, 0, 0)
+        compose.onNodeWithText(due).assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.mastery_title)).assertIsDisplayed()
+    }
+
+    @Test
     fun `overview shows learned cards, started verbs and a due chip`() {
         show(VerbListUiState(verbs = verbs, isLoading = false, mastery = mastery))
 
