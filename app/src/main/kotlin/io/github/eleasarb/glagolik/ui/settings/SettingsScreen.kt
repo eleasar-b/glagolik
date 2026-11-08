@@ -36,6 +36,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -68,6 +69,7 @@ fun SettingsRoute(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var pendingImport by rememberSaveable { mutableStateOf<Uri?>(null) }
     // Storage Access Framework: the learner picks the location, no permission needed.
@@ -84,6 +86,8 @@ fun SettingsRoute(
         onSessionSizeChange = viewModel::onSessionSizeChange,
         onStrictYoChange = viewModel::onStrictYoChange,
         onAutoPlayAudioChange = viewModel::onAutoPlayAudioChange,
+        onSpeechTest = viewModel::onSpeechTest,
+        onOpenSpeechSettings = { context.openSpeechSettings() },
         onTenseToggle = viewModel::onTenseToggle,
         onExportClick = { exportLauncher.launch(viewModel.exportFileName()) },
         onImportClick = { importLauncher.launch(IMPORT_MIME_TYPES) },
@@ -134,6 +138,8 @@ fun SettingsScreen(
     onSessionSizeChange: (Int) -> Unit,
     onStrictYoChange: (Boolean) -> Unit,
     onAutoPlayAudioChange: (Boolean) -> Unit,
+    onSpeechTest: () -> Unit,
+    onOpenSpeechSettings: () -> Unit,
     onTenseToggle: (Tense) -> Unit,
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
@@ -169,8 +175,15 @@ fun SettingsScreen(
                 onNewFormsPerDayChange = onNewFormsPerDayChange,
                 onSessionSizeChange = onSessionSizeChange,
                 onStrictYoChange = onStrictYoChange,
-                onAutoPlayAudioChange = onAutoPlayAudioChange,
                 onTenseToggle = onTenseToggle,
+            )
+            HorizontalDivider()
+            AudioSettingsSection(
+                autoPlay = uiState.settings.autoPlayAudio,
+                speech = uiState.speech,
+                onAutoPlayChange = onAutoPlayAudioChange,
+                onTest = onSpeechTest,
+                onOpenSystemSettings = onOpenSpeechSettings,
             )
             HorizontalDivider()
             BackupSection(
@@ -183,7 +196,7 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SwitchSetting(
+internal fun SwitchSetting(
     label: String,
     summary: String,
     checked: Boolean,
@@ -218,7 +231,6 @@ private fun TrainingSettingsSection(
     onNewFormsPerDayChange: (Int) -> Unit,
     onSessionSizeChange: (Int) -> Unit,
     onStrictYoChange: (Boolean) -> Unit,
-    onAutoPlayAudioChange: (Boolean) -> Unit,
     onTenseToggle: (Tense) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -241,12 +253,6 @@ private fun TrainingSettingsSection(
             summary = stringResource(R.string.settings_strict_yo_summary),
             checked = settings.strictYo,
             onCheckedChange = onStrictYoChange,
-        )
-        SwitchSetting(
-            label = stringResource(R.string.settings_auto_play),
-            summary = stringResource(R.string.settings_auto_play_summary),
-            checked = settings.autoPlayAudio,
-            onCheckedChange = onAutoPlayAudioChange,
         )
         HorizontalDivider()
         Text(
@@ -385,6 +391,8 @@ private fun SettingsScreenPreview() {
             onSessionSizeChange = {},
             onStrictYoChange = {},
             onAutoPlayAudioChange = {},
+            onSpeechTest = {},
+            onOpenSpeechSettings = {},
             onTenseToggle = {},
             onExportClick = {},
             onImportClick = {},

@@ -48,6 +48,16 @@ class VoiceSelectionTest {
     }
 
     @Test
+    fun `three-letter language codes are recognized`() {
+        val voices = listOf(
+            Voice("rhvoice", Locale.Builder().setLanguage("rus").build(), 300, 300, false, null),
+            voice("de", "de-CH"),
+        )
+
+        assertEquals("rhvoice", selectRussianVoice(voices)?.name)
+    }
+
+    @Test
     fun `no russian voice gives null`() {
         assertEquals(null, selectRussianVoice(listOf(voice("de", "de-CH"), voice("en", "en-US"))))
     }

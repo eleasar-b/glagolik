@@ -87,6 +87,11 @@
     <string name="settings_strict_yo_summary">Count е instead of ё as wrong</string>
     <string name="settings_auto_play">Play pronunciation automatically</string>
     <string name="settings_auto_play_summary">After checking an answer. Needs a Russian offline voice in the system text-to-speech settings.</string>
+    <string name="settings_speech_checking">Checking text-to-speech …</string>
+    <string name="settings_speech_ready">Russian voice found. Speaker buttons appear after checking an answer and in the verb table.</string>
+    <string name="settings_speech_unavailable">No Russian offline voice found, so pronunciation is off. Install a text-to-speech app with a Russian voice (e.g. RHVoice or eSpeak NG), select it as the preferred engine and download the Russian voice.</string>
+    <string name="settings_speech_test">Test</string>
+    <string name="settings_speech_open">Text-to-speech settings</string>
     <string name="settings_tenses">Quizzed tenses</string>
     <string name="settings_tenses_hint">At least one tense stays selected.</string>
     <string name="settings_decrease">Decrease</string>

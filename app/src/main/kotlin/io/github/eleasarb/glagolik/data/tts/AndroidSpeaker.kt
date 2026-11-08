@@ -4,12 +4,15 @@ import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.Voice
 import java.util.Locale
+import java.util.MissingResourceException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 private const val RUSSIAN = "ru"
+private const val RUSSIAN_ISO3 = "rus"
 private const val RUSSIA = "RU"
+private const val RUSSIA_ISO3 = "RUS"
 private val RUSSIAN_RUSSIA: Locale = Locale.forLanguageTag("ru-RU")
 private const val UTTERANCE_ID = "glagolik"
 
@@ -42,12 +45,15 @@ class AndroidSpeaker(context: Context) : Speaker {
 
     private fun useRussianVoice(tts: TextToSpeech): Boolean {
         val voices = tts.voices.orEmpty()
-        return if (voices.isEmpty()) {
-            // Engines without the voice API: fall back to the language.
-            tts.setLanguage(RUSSIAN_RUSSIA) >= TextToSpeech.LANG_AVAILABLE
-        } else {
-            val voice = selectRussianVoice(voices)
-            voice != null && tts.setVoice(voice) == TextToSpeech.SUCCESS
+        val voice = selectRussianVoice(voices)
+        return when {
+            voice != null -> tts.setVoice(voice) == TextToSpeech.SUCCESS
+
+            // Russian voices exist, but only online or not downloaded: do not use them.
+            voices.any { it.locale.isRussian() } -> false
+
+            // Engines that list no Russian voice (or none at all): try the language.
+            else -> tts.setLanguage(RUSSIAN_RUSSIA) >= TextToSpeech.LANG_AVAILABLE
         }
     }
 
@@ -69,11 +75,21 @@ class AndroidSpeaker(context: Context) : Speaker {
  * regions, then higher quality, then lower latency.
  */
 internal fun selectRussianVoice(voices: Collection<Voice>): Voice? = voices
-    .filter { it.locale.language == RUSSIAN }
+    .filter { it.locale.isRussian() }
     .filterNot { it.isNetworkConnectionRequired }
     .filterNot { TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED in it.features.orEmpty() }
     .maxWithOrNull(
-        compareBy<Voice> { it.locale.country == RUSSIA }
+        compareBy<Voice> { it.locale.country == RUSSIA || it.locale.country == RUSSIA_ISO3 }
             .thenBy { it.quality }
             .thenByDescending { it.latency },
     )
+
+/** Engines report either ISO 639-1 ("ru") or ISO 639-2 ("rus") language codes. */
+private fun Locale.isRussian(): Boolean {
+    val iso3 = try {
+        isO3Language
+    } catch (_: MissingResourceException) {
+        ""
+    }
+    return language == RUSSIAN || language == RUSSIAN_ISO3 || iso3 == RUSSIAN_ISO3
+}

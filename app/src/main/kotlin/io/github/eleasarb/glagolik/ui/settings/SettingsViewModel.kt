@@ -9,6 +9,8 @@ import io.github.eleasarb.glagolik.data.backup.BackupFormatException
 import io.github.eleasarb.glagolik.data.backup.BackupRepository
 import io.github.eleasarb.glagolik.data.backup.BackupSummary
 import io.github.eleasarb.glagolik.data.settings.SettingsRepository
+import io.github.eleasarb.glagolik.data.tts.Speaker
+import io.github.eleasarb.glagolik.data.tts.SpeechAvailability
 import io.github.eleasarb.glagolik.domain.model.Tense
 import io.github.eleasarb.glagolik.domain.model.TrainingSettings
 import java.io.IOException
@@ -41,18 +43,26 @@ sealed interface BackupStatus {
 data class SettingsUiState(
     val settings: TrainingSettings = TrainingSettings(),
     val backupStatus: BackupStatus? = null,
+    /** Whether a Russian offline voice is available, shown below the audio setting. */
+    val speech: SpeechAvailability = SpeechAvailability.INITIALIZING,
 )
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val repository: SettingsRepository,
     private val backup: BackupRepository,
+    private val speaker: Speaker,
     private val clock: Clock,
-) : ViewModel() {
+) : ViewModel(speaker) {
     private val backupStatus = MutableStateFlow<BackupStatus?>(null)
 
     val uiState: StateFlow<SettingsUiState> =
-        combine(repository.settings, backupStatus, ::SettingsUiState).stateIn(
+        combine(
+            repository.settings,
+            backupStatus,
+            speaker.availability,
+            ::SettingsUiState,
+        ).stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
             initialValue = SettingsUiState(),
@@ -75,6 +85,11 @@ class SettingsViewModel @Inject constructor(
 
     fun onAutoPlayAudioChange(value: Boolean) {
         viewModelScope.launch { repository.setAutoPlayAudio(value) }
+    }
+
+    /** Plays a short sentence, so the learner can check voice and stress. */
+    fun onSpeechTest() {
+        speaker.speak(SPEECH_TEST)
     }
 
     fun onTenseToggle(tense: Tense) {
@@ -105,6 +120,8 @@ class SettingsViewModel @Inject constructor(
     }
 
     private companion object {
+        /** With stress marks, like every form the app speaks. */
+        const val SPEECH_TEST = "Приве́т! Я говорю́ по-ру́сски."
         const val STOP_TIMEOUT_MILLIS = 5_000L
     }
 }
