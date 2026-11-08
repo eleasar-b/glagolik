@@ -5,9 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.eleasarb.glagolik.data.repository.ProgressRepository
+import io.github.eleasarb.glagolik.data.repository.VerbRepository
 import io.github.eleasarb.glagolik.data.settings.SettingsRepository
 import io.github.eleasarb.glagolik.domain.checking.AnswerChecker
 import io.github.eleasarb.glagolik.domain.checking.AnswerResult
+import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.domain.usecase.BuildSessionUseCase
 import io.github.eleasarb.glagolik.domain.usecase.SessionCard
@@ -36,6 +38,11 @@ sealed interface TrainingUiState {
         val input: String = "",
         /** `null` while waiting for an answer. */
         val feedback: AnswerResult? = null,
+        /**
+         * All forms of the asked tense, shown after a wrong answer. Empty otherwise and while
+         * they are loading.
+         */
+        val tenseForms: List<ConjugatedForm> = emptyList(),
     ) : TrainingUiState {
         /** Correct or Incorrect: the card is graded and the next step is "continue". */
         val isGraded: Boolean
@@ -54,6 +61,7 @@ sealed interface TrainingUiState {
 class TrainingViewModel @Inject constructor(
     private val buildSession: BuildSessionUseCase,
     private val progress: ProgressRepository,
+    private val verbs: VerbRepository,
     private val settings: SettingsRepository,
     private val clock: Clock,
 ) : ViewModel() {
@@ -101,6 +109,22 @@ class TrainingViewModel @Inject constructor(
             answerDuration = Duration.between(shownAt, clock.instant())
         }
         _uiState.value = state.copy(feedback = result)
+        if (result is AnswerResult.Incorrect) showTense(state)
+    }
+
+    private fun showTense(state: TrainingUiState.Question) {
+        val ref = state.card.form.ref
+        viewModelScope.launch {
+            val forms = verbs.getVerbDetail(ref.verbId)?.formsOf(ref.form.tense).orEmpty()
+            _uiState.update { current ->
+                // The learner may have moved on while the forms were loading.
+                if (current is TrainingUiState.Question && current.position == state.position) {
+                    current.copy(tenseForms = forms)
+                } else {
+                    current
+                }
+            }
+        }
     }
 
     /** Stores the rating and moves on. [easy] only counts after a correct answer. */

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -13,6 +14,7 @@ import androidx.test.core.app.ApplicationProvider
 import io.github.eleasarb.glagolik.R
 import io.github.eleasarb.glagolik.domain.checking.AnswerResult
 import io.github.eleasarb.glagolik.domain.model.Aspect
+import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.FormRef
 import io.github.eleasarb.glagolik.domain.model.TrainableForm
@@ -98,6 +100,32 @@ class TrainingScreenTest {
         compose.onNodeWithText(string(R.string.training_continue)).performScrollTo().performClick()
 
         assertEquals(false, continued)
+    }
+
+    @Test
+    fun `wrong answer shows the whole tense`() {
+        val forms = listOf(
+            FormKey.FUTURE_SG1 to "скажу́",
+            FormKey.FUTURE_SG2 to "ска́жешь",
+            FormKey.FUTURE_PL3 to "ска́жут",
+        ).map { (key, form) -> ConjugatedForm(key, listOf(form), isTrainable = true) }
+        val wrong = AnswerResult.Incorrect(listOf("ска́жешь"))
+        show(question("скажишь", wrong).copy(tenseForms = forms))
+
+        val title = context.getString(R.string.training_tense_forms, string(R.string.tense_future))
+        compose.onNodeWithText(title).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("скажу́").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("ска́жут").performScrollTo().assertIsDisplayed()
+        // Once as the correct answer, once in the table.
+        assertEquals(2, compose.onAllNodesWithText("ска́жешь").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun `correct answer shows no tense table`() {
+        show(question("скажешь", AnswerResult.Correct("ска́жешь")))
+
+        val title = context.getString(R.string.training_tense_forms, string(R.string.tense_future))
+        compose.onNodeWithText(title).assertDoesNotExist()
     }
 
     @Test

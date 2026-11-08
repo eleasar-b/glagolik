@@ -46,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.eleasarb.glagolik.R
 import io.github.eleasarb.glagolik.domain.checking.AnswerResult
 import io.github.eleasarb.glagolik.domain.model.Aspect
+import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.FormRef
 import io.github.eleasarb.glagolik.domain.model.TrainableForm
@@ -194,6 +195,13 @@ private fun QuestionContent(
             val feedback = state.feedback
             if (feedback is AnswerResult.Correct || feedback is AnswerResult.Incorrect) {
                 FeedbackCard(feedback = feedback)
+            }
+            if (feedback is AnswerResult.Incorrect && state.tenseForms.isNotEmpty()) {
+                TenseFormsCard(
+                    tense = state.card.form.ref.form.tense,
+                    forms = state.tenseForms,
+                    asked = state.card.form.ref.form,
+                )
             }
             Actions(state = state, onSubmit = onSubmit, onContinue = onContinue)
         }
@@ -353,6 +361,43 @@ private fun TrainingScreenPreview() {
                 total = 20,
                 input = "скажешь",
                 feedback = AnswerResult.Correct("ска́жешь"),
+            ),
+            onInputChange = {},
+            onSubmit = {},
+            onContinue = {},
+            onClose = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TrainingScreenIncorrectPreview() {
+    val card = SessionCard(
+        form = TrainableForm(
+            ref = FormRef(2, FormKey.FUTURE_SG2),
+            verb = VerbSummary(2, "сказа́ть", Aspect.PERFECTIVE, Translation("sagen", "say")),
+            expected = listOf("ска́жешь"),
+        ),
+        isNew = false,
+    )
+    val forms = listOf(
+        FormKey.FUTURE_SG1 to "скажу́",
+        FormKey.FUTURE_SG2 to "ска́жешь",
+        FormKey.FUTURE_SG3 to "ска́жет",
+        FormKey.FUTURE_PL1 to "ска́жем",
+        FormKey.FUTURE_PL2 to "ска́жете",
+        FormKey.FUTURE_PL3 to "ска́жут",
+    ).map { (key, form) -> ConjugatedForm(key, listOf(form), isTrainable = true) }
+    GlagolikTheme(dynamicColor = false) {
+        TrainingScreen(
+            uiState = TrainingUiState.Question(
+                card = card,
+                position = 3,
+                total = 20,
+                input = "скажишь",
+                feedback = AnswerResult.Incorrect(listOf("ска́жешь")),
+                tenseForms = forms,
             ),
             onInputChange = {},
             onSubmit = {},

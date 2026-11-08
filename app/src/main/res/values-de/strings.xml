@@ -48,6 +48,7 @@
     <string name="training_correct">Richtig</string>
     <string name="training_incorrect">Nicht ganz. Richtig ist:</string>
     <string name="training_yo_hint">Hinweis: wird mit ё geschrieben.</string>
+    <string name="training_tense_forms">%1$s: alle Formen</string>
     <string name="training_latin_letters">Lateinische Buchstaben in deiner Antwort: %1$s. Bitte die russische Tastatur verwenden.</string>
     <string name="training_empty_answer">Bitte gib eine Antwort ein.</string>
     <string name="training_nothing_title">Für heute ist alles erledigt</string>

@@ -1,9 +1,11 @@
 package io.github.eleasarb.glagolik.ui.training
 
 import io.github.eleasarb.glagolik.domain.checking.AnswerResult
+import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.TrainableForm
 import io.github.eleasarb.glagolik.domain.model.TrainingSettings
+import io.github.eleasarb.glagolik.domain.model.VerbDetail
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.domain.usecase.BuildSessionUseCase
 import io.github.eleasarb.glagolik.testing.FakeProgressRepository
@@ -11,6 +13,7 @@ import io.github.eleasarb.glagolik.testing.FakeSettingsRepository
 import io.github.eleasarb.glagolik.testing.FakeVerbRepository
 import io.github.eleasarb.glagolik.testing.MainDispatcherRule
 import io.github.eleasarb.glagolik.testing.trainableForm
+import io.github.eleasarb.glagolik.testing.verbSummary
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -28,20 +31,33 @@ class TrainingViewModelTest {
     private val idet = trainableForm(9, FormKey.PRESENT_SG3, "идёт")
     private val progress = FakeProgressRepository()
 
+    private val future = listOf(
+        FormKey.FUTURE_SG1 to "скажу́",
+        FormKey.FUTURE_SG2 to "ска́жешь",
+        FormKey.FUTURE_PL3 to "ска́жут",
+    ).map { (key, form) -> ConjugatedForm(key, listOf(form), isTrainable = true) }
+    private val skazatDetail = VerbDetail(
+        summary = verbSummary(2, "сказа́ть"),
+        forms = future + ConjugatedForm(FormKey.PAST_M, listOf("сказа́л"), isTrainable = true),
+        partners = emptyList(),
+    )
+
     private fun viewModel(
         settings: TrainingSettings = TrainingSettings(newFormsPerDay = 1),
         forms: List<TrainableForm> = listOf(skazhu),
+        details: Map<Int, VerbDetail> = mapOf(2 to skazatDetail),
     ): TrainingViewModel {
         val clock = Clock.fixed(NOW, ZoneOffset.UTC)
         val settingsRepository = FakeSettingsRepository(settings)
+        val verbs = FakeVerbRepository(verbs = emptyList(), details = details, trainable = forms)
         val buildSession = BuildSessionUseCase(
-            verbs = FakeVerbRepository(verbs = emptyList(), trainable = forms),
+            verbs = verbs,
             progress = progress,
             settings = settingsRepository,
             clock = clock,
             random = Random(seed = 1),
         )
-        return TrainingViewModel(buildSession, progress, settingsRepository, clock)
+        return TrainingViewModel(buildSession, progress, verbs, settingsRepository, clock)
     }
 
     private fun TrainingViewModel.question(): TrainingUiState.Question =
@@ -100,6 +116,34 @@ class TrainingViewModelTest {
         vm.answer("скажу")
         vm.onContinue()
         assertEquals(TrainingUiState.Finished(cards = 1, correctFirstTry = 0), vm.uiState.value)
+    }
+
+    @Test
+    fun `wrong answer shows all forms of the asked tense`() {
+        val vm = viewModel()
+        vm.answer("скажет")
+
+        assertEquals(future, vm.question().tenseForms)
+
+        vm.onContinue()
+        assertEquals(emptyList<ConjugatedForm>(), vm.question().tenseForms)
+    }
+
+    @Test
+    fun `correct answer shows no tense forms`() {
+        val vm = viewModel()
+        vm.answer("скажу")
+
+        assertEquals(emptyList<ConjugatedForm>(), vm.question().tenseForms)
+    }
+
+    @Test
+    fun `unknown verb shows the answer without tense forms`() {
+        val vm = viewModel(details = emptyMap())
+        vm.answer("скажет")
+
+        assertTrue(vm.question().feedback is AnswerResult.Incorrect)
+        assertEquals(emptyList<ConjugatedForm>(), vm.question().tenseForms)
     }
 
     @Test
