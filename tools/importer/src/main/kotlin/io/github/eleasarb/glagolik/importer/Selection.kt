@@ -12,7 +12,9 @@ data class Selection(
 )
 
 fun select(source: List<SourceVerb>, overrides: Overrides, coreSize: Int): Selection {
-    val candidates = source.filterNot { overrides.isExcluded(it.key) }.map(overrides::apply)
+    val candidates = source.filterNot { overrides.isExcluded(it.key) }
+        .map(overrides::apply)
+        .sortedBy { it.rank }
     val core = candidates.take(coreSize)
     require(core.size == coreSize) { "only ${core.size} verbs available, $coreSize requested" }
 

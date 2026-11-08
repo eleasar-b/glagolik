@@ -124,6 +124,45 @@ class ImporterTest {
     }
 
     @Test
+    fun `RANK moves a verb into the core set and the other one out`() {
+        val file = temp.newFile("overrides.csv").apply {
+            writeText(
+                overrides.readText() +
+                    "поднима'ть,imperfective,RANK,,5,frequency belongs to this homograph\n" +
+                    "подня'ть,perfective,RANK,,8,frequency belongs to the other homograph\n",
+            )
+        }
+        val result = import(overridesFile = file)
+        val byBare = result.verbs.associateBy { toBare(it.infinitive) }
+
+        assertTrue(byBare.getValue("поднимать").isCore)
+        assertEquals(5, byBare.getValue("поднимать").frequencyRank)
+        assertFalse(byBare.getValue("поднять").isCore)
+        assertEquals(8, byBare.getValue("поднять").frequencyRank)
+        assertTrue(result.report.contains("RANK поднима'ть (imperfective) rank 5:"))
+    }
+
+    @Test
+    fun `RANK that collides with another verb fails the import`() {
+        val file = temp.newFile("overrides.csv").apply {
+            writeText(overrides.readText() + "поднима'ть,imperfective,RANK,,5,collision\n")
+        }
+        val error = assertThrows(ImportException::class.java) { import(overridesFile = file) }
+        assertTrue(error.message.orEmpty().contains("duplicate rank"))
+    }
+
+    @Test
+    fun `RANK needs a positive number`() {
+        val file = temp.newFile("overrides.csv").apply {
+            writeText(OVERRIDES_HEADER + "поднима'ть,imperfective,RANK,,first,x\n")
+        }
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            import(overridesFile = file)
+        }
+        assertTrue(error.message.orEmpty().contains("positive number"))
+    }
+
+    @Test
     fun `first import numbers verbs densely in frequency order`() {
         val result = import()
         assertEquals((1..result.verbs.size).toList(), result.verbs.map { it.id })

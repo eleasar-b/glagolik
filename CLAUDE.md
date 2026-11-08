@@ -97,7 +97,9 @@ io/github/eleasarb/glagolik/
   direkt in den Raw-Daten. Aktionen: `EXCLUDE` (Verb weglassen), `ALLOW_MISSING`
   (Formen fehlen legitim, z. B. unpersönliche Verben), `SET` (Feld ersetzen, nur mit
   geprüftem Wert), `NO_TRAINING` (Formen bleiben in der Tabelle, werden aber nie
-  abgefragt, z. B. Präsens von быть). Jede Zeile braucht einen Grund.
+  abgefragt, z. B. Präsens von быть), `RANK` (Frequenzrang ersetzen, wenn die Quelle die
+  Frequenz einem falschen Homographen zuordnet; beide Einträge tauschen, Ränge bleiben
+  eindeutig). Jede Zeile braucht einen Grund.
 - **Stabile IDs:** `data/verb-ids.csv` ordnet jedem Verb (betonter Infinitiv + Aspekt)
   eine feste ID zu. Lernfortschritt referenziert diese ID. Neue Verben erhalten die
   nächste freie ID, IDs weggefallener Verben bleiben reserviert und werden nie neu
