@@ -50,9 +50,6 @@
         <item quantity="other">%1$d of %2$d cards mature</item>
     </plurals>
     <string name="verb_infinitive">Infinitive</string>
-    <!-- Direction of a meaning exercise: pick the translation / type the infinitive -->
-    <string name="verb_direction_ru_de">RU→EN</string>
-    <string name="verb_direction_de_ru">EN→RU</string>
 
     <!-- Russian pronouns, identical in every UI language -->
     <string name="pronoun_sg1" translatable="false">я</string>

@@ -229,8 +229,8 @@ private fun PartnerChips(
 }
 
 /**
- * The meaning cards of the verb, like a tense: one row per direction with the infinitive and
- * its level. A tap speaks the infinitive.
+ * The meaning cards of the verb, like a tense: the infinitive with one dot for both directions
+ * (RU→DE, DE→RU), showing the weaker level. A tap speaks the infinitive.
  */
 @Composable
 private fun InfinitiveCard(
@@ -246,21 +246,12 @@ private fun InfinitiveCard(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
-            Exercise.MEANINGS.forEach { exercise ->
-                val level = meaning[exercise] ?: return@forEach
-                LevelRow(
-                    label = stringResource(
-                        if (exercise == Exercise.MeaningRuDe) {
-                            R.string.verb_direction_ru_de
-                        } else {
-                            R.string.verb_direction_de_ru
-                        },
-                    ),
-                    text = infinitive,
-                    level = level,
-                    onSpeak = onSpeak?.let { speak -> { speak(infinitive) } },
-                )
-            }
+            LevelRow(
+                label = null,
+                text = infinitive,
+                level = meaning.values.minByOrNull { it.ordinal },
+                onSpeak = onSpeak?.let { speak -> { speak(infinitive) } },
+            )
         }
     }
 }
@@ -318,10 +309,13 @@ private fun FormRow(
     )
 }
 
-/** Label column, text and the level dot ([level] `null`: no dot); a tap calls [onSpeak]. */
+/**
+ * Label column ([label] `null`: none), text and the level dot ([level] `null`: no dot); a tap
+ * calls [onSpeak].
+ */
 @Composable
 private fun LevelRow(
-    label: String,
+    label: String?,
     text: String,
     level: MasteryLevel?,
     onSpeak: (() -> Unit)?,
@@ -345,12 +339,14 @@ private fun LevelRow(
             .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(96.dp),
-        )
+        if (label != null) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.width(96.dp),
+            )
+        }
         Text(
             text = text,
             style = MaterialTheme.typography.bodyLarge,

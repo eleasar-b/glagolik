@@ -3,6 +3,8 @@ package io.github.eleasarb.glagolik.ui.verbs
 import android.content.Context
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
@@ -102,12 +104,13 @@ class VerbDetailScreenTest {
         compose.onNodeWithText("1 of 2 learned · 50%").assertIsDisplayed()
         compose.onNodeWithText(string(R.string.verb_infinitive)).performScrollTo()
             .assertIsDisplayed()
-        compose.onNodeWithText(string(R.string.verb_direction_ru_de)).performScrollTo()
-            .assertIsDisplayed()
-        compose.onNodeWithText(string(R.string.verb_direction_de_ru)).performScrollTo()
-            .performClick()
+        // One row with the Russian infinitive only; the dot shows the weaker direction.
+        // Top bar, header and the infinitive row; only the row is tappable.
+        compose.onAllNodesWithText("подня́ть").assertCountEquals(3)
+        compose.onNode(hasText("подня́ть") and hasClickAction()).performScrollTo().performClick()
         assertEquals("подня́ть", spoken)
-        compose.onNodeWithContentDescription(string(R.string.mastery_young)).assertExists()
+        compose.onNodeWithContentDescription(string(R.string.mastery_young)).assertDoesNotExist()
+        compose.onNodeWithContentDescription(string(R.string.mastery_new)).assertExists()
     }
 
     @Test

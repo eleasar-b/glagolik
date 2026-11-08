@@ -44,8 +44,6 @@
         <item quantity="other">%1$d von %2$d Karten gefestigt</item>
     </plurals>
     <string name="verb_infinitive">Infinitiv</string>
-    <string name="verb_direction_ru_de">RU→DE</string>
-    <string name="verb_direction_de_ru">DE→RU</string>
 
     <string name="about_title">Info</string>
     <string name="about_version">Glagolik %1$s</string>
