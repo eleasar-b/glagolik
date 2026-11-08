@@ -37,6 +37,18 @@ enum class SourceField(val column: String) {
     }
 }
 
+/** Columns of `data/raw/verbs.csv` that hold translations. Only SET may target them. */
+enum class TranslationField(val column: String) {
+    EN("translations_en"),
+    DE("translations_de"),
+    ;
+
+    companion object {
+        fun fromColumn(column: String): TranslationField? =
+            entries.firstOrNull { it.column == column }
+    }
+}
+
 /** Grammatical form as stored in the database. */
 enum class FormKey {
     PRESENT_SG1,

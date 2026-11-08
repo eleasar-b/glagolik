@@ -22,7 +22,7 @@ abstract class VerbsDatabase : RoomDatabase() {
     abstract fun verbDao(): VerbDao
 
     companion object {
-        const val VERSION = 1
+        const val VERSION = 2
         private const val ASSET = "verbs.db"
         private const val NAME = "verbs.db"
 

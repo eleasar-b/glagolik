@@ -2,11 +2,14 @@ package io.github.eleasarb.glagolik.ui.verbs
 
 import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import io.github.eleasarb.glagolik.R
@@ -17,6 +20,7 @@ import io.github.eleasarb.glagolik.domain.model.Translation
 import io.github.eleasarb.glagolik.domain.model.VerbSummary
 import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -117,6 +121,24 @@ class VerbListScreenTest {
     }
 
     @Test
+    fun `last verb can be scrolled above the training button`() {
+        val many = (1..LONG_LIST_SIZE).map { id ->
+            VerbSummary(id, "глагол$id", Aspect.IMPERFECTIVE, Translation("de$id", "en$id"))
+        }
+        show(VerbListUiState(verbs = many, isLoading = false))
+
+        compose.onNodeWithTag(VERB_LIST_TAG).performScrollToIndex(many.lastIndex)
+
+        val lastRow = compose.onNodeWithText("en$LONG_LIST_SIZE").getBoundsInRoot()
+        val fab = compose.onNodeWithText(context.getString(R.string.training_start))
+            .getBoundsInRoot()
+        assertTrue(
+            "last row ends at ${lastRow.bottom}, FAB starts at ${fab.top}",
+            lastRow.bottom <= fab.top,
+        )
+    }
+
+    @Test
     fun `info button opens about`() {
         var opened = false
         show(VerbListUiState(verbs = verbs, isLoading = false), onAboutClick = { opened = true })
@@ -164,5 +186,9 @@ class VerbListScreenTest {
                 )
             }
         }
+    }
+
+    private companion object {
+        const val LONG_LIST_SIZE = 40
     }
 }

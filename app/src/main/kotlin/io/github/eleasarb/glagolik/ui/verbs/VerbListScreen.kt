@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -46,6 +48,14 @@ import io.github.eleasarb.glagolik.ui.components.MasteryBar
 import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
 
 private const val OVERVIEW_KEY = "mastery-overview"
+
+internal const val VERB_LIST_TAG = "verb-list"
+
+/**
+ * Space below the last row, so the FAB never covers it: FAB height (56 dp), the Scaffold's FAB
+ * margin (16 dp) and 16 dp of breathing room.
+ */
+private val FAB_CLEARANCE = 88.dp
 
 /** Wide enough for "18/18", so the bars of all rows end at the same position. */
 private val FRACTION_MIN_WIDTH = 40.dp
@@ -144,7 +154,12 @@ private fun VerbList(
         return
     }
     val mastery = uiState.mastery
-    LazyColumn(modifier = modifier.fillMaxSize()) {
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .testTag(VERB_LIST_TAG),
+        contentPadding = PaddingValues(bottom = FAB_CLEARANCE),
+    ) {
         if (mastery != null && uiState.query.isBlank()) {
             item(key = OVERVIEW_KEY) {
                 MasteryOverviewCard(

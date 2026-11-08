@@ -86,6 +86,44 @@ class ImporterTest {
     }
 
     @Test
+    fun `SET replaces a translation and is listed in the report`() {
+        val file = temp.newFile("overrides.csv").apply {
+            writeText(
+                overrides.readText() +
+                    "сказа'ть,perfective,SET,translations_en,\"say, tell\",stray word\n" +
+                    "сказа'ть,perfective,SET,translations_de,sagen,typo\n",
+            )
+        }
+        val result = import(overridesFile = file)
+        val skazat = result.verbs.single { toBare(it.infinitive) == "сказать" }
+        assertEquals("say, tell", skazat.translationEn)
+        assertEquals("sagen", skazat.translationDe)
+        assertTrue(result.report.contains("SET сказа'ть (perfective) translations_en: stray word"))
+    }
+
+    @Test
+    fun `translation can only be changed with SET`() {
+        val file = temp.newFile("overrides.csv").apply {
+            writeText(OVERRIDES_HEADER + "сказа'ть,perfective,ALLOW_MISSING,translations_en,,x\n")
+        }
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            import(overridesFile = file)
+        }
+        assertTrue(error.message.orEmpty().contains("only be changed with SET"))
+    }
+
+    @Test
+    fun `SET of a translation needs a value`() {
+        val file = temp.newFile("overrides.csv").apply {
+            writeText(OVERRIDES_HEADER + "сказа'ть,perfective,SET,translations_de,,x\n")
+        }
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            import(overridesFile = file)
+        }
+        assertTrue(error.message.orEmpty().contains("needs a value"))
+    }
+
+    @Test
     fun `first import numbers verbs densely in frequency order`() {
         val result = import()
         assertEquals((1..result.verbs.size).toList(), result.verbs.map { it.id })

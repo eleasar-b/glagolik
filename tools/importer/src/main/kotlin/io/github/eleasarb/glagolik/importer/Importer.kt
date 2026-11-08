@@ -111,7 +111,7 @@ private fun report(selection: Selection, overrides: Overrides, verbs: List<Verb>
         appendLine("## Overrides")
         appendLine()
         overrides.all.forEach { override ->
-            val fields = override.fields.joinToString(";") { it.column }
+            val fields = override.columns.joinToString(";")
             appendLine("- ${override.action} ${override.key} $fields: ${override.reason}")
         }
         appendLine()
