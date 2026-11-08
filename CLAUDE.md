@@ -149,10 +149,8 @@ io/github/eleasarb/glagolik/
   - Lateinische Doppelgänger (a/а, e/е, o/о, p/р, c/с, x/х, y/у …) führen zu
     einer klaren Fehlermeldung, die Antwort wird nicht stillschweigend als
     falsch gewertet.
-- **Audio:**
-  - Wiedergabe der Form beim Üben (optional automatisch).
-  - Die Wiedergabe einer ganzen Liste läuft auch im Hintergrund
-    (Media-Session/Foreground-Service).
+- **Audio:** Wiedergabe der Form beim Üben und in der Verbtabelle (beim Üben optional
+  automatisch). Nur russische Offline-Stimmen der System-Sprachausgabe.
 
 ## 7. Code-Konventionen
 
