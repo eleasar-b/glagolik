@@ -68,6 +68,13 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun `resume checks the voice again`() {
+        viewModel().onResume()
+
+        assertEquals(1, speaker.refreshes)
+    }
+
+    @Test
     fun `successful export and import are reported`() = runTest {
         val vm = viewModel()
         collect(vm)

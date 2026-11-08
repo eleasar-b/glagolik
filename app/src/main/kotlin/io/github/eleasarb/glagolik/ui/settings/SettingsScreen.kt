@@ -47,6 +47,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.eleasarb.glagolik.R
 import io.github.eleasarb.glagolik.data.backup.BackupSummary
@@ -70,6 +72,8 @@ fun SettingsRoute(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    // Coming back from the system settings: a voice may have been installed meanwhile.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var pendingImport by rememberSaveable { mutableStateOf<Uri?>(null) }
     // Storage Access Framework: the learner picks the location, no permission needed.
@@ -87,6 +91,7 @@ fun SettingsRoute(
         onStrictYoChange = viewModel::onStrictYoChange,
         onAutoPlayAudioChange = viewModel::onAutoPlayAudioChange,
         onSpeechTest = viewModel::onSpeechTest,
+        onInstallVoice = { context.openVoiceInstall() },
         onOpenSpeechSettings = { context.openSpeechSettings() },
         onTenseToggle = viewModel::onTenseToggle,
         onExportClick = { exportLauncher.launch(viewModel.exportFileName()) },
@@ -139,6 +144,7 @@ fun SettingsScreen(
     onStrictYoChange: (Boolean) -> Unit,
     onAutoPlayAudioChange: (Boolean) -> Unit,
     onSpeechTest: () -> Unit,
+    onInstallVoice: () -> Unit,
     onOpenSpeechSettings: () -> Unit,
     onTenseToggle: (Tense) -> Unit,
     onExportClick: () -> Unit,
@@ -183,6 +189,7 @@ fun SettingsScreen(
                 speech = uiState.speech,
                 onAutoPlayChange = onAutoPlayAudioChange,
                 onTest = onSpeechTest,
+                onInstallVoice = onInstallVoice,
                 onOpenSystemSettings = onOpenSpeechSettings,
             )
             HorizontalDivider()
@@ -392,6 +399,7 @@ private fun SettingsScreenPreview() {
             onStrictYoChange = {},
             onAutoPlayAudioChange = {},
             onSpeechTest = {},
+            onInstallVoice = {},
             onOpenSpeechSettings = {},
             onTenseToggle = {},
             onExportClick = {},

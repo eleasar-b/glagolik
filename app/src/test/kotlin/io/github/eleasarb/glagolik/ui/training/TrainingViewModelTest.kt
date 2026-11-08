@@ -182,7 +182,7 @@ class TrainingViewModelTest {
         val vm = viewModel()
         assertEquals(true, vm.question().canSpeak)
 
-        speaker.availability.value = SpeechAvailability.UNAVAILABLE
+        speaker.availability.value = SpeechAvailability.NO_ENGINE
 
         assertEquals(false, vm.question().canSpeak)
     }

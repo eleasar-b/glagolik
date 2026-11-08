@@ -66,7 +66,10 @@
     <string name="settings_auto_play_summary">Nach dem Prüfen einer Antwort. Benötigt eine russische Offline-Stimme in der Sprachausgabe des Systems.</string>
     <string name="settings_speech_checking">Sprachausgabe wird geprüft …</string>
     <string name="settings_speech_ready">Russische Stimme gefunden. Lautsprecher-Buttons erscheinen nach dem Prüfen einer Antwort und in der Verbtabelle.</string>
-    <string name="settings_speech_unavailable">Keine russische Offline-Stimme gefunden, die Aussprache ist deshalb aus. Installiere eine Sprachausgabe-App mit russischer Stimme (z. B. RHVoice oder eSpeak NG), wähle sie als bevorzugte Engine und lade die russische Stimme herunter.</string>
+    <string name="settings_speech_no_engine">Keine Sprachausgabe installiert, die Aussprache ist deshalb aus. Installiere eine Sprachausgabe mit russischer Stimme und wähle sie als bevorzugte Engine.</string>
+    <string name="settings_speech_not_installed">Die russische Stimme deiner Sprachausgabe ist nicht heruntergeladen (oder nur online verfügbar), die Aussprache ist deshalb aus. Lade sie herunter und komm dann hierher zurück.</string>
+    <string name="settings_speech_no_russian">Deine Sprachausgabe hat keine russische Stimme, die Aussprache ist deshalb aus. Wähle in den Sprachausgabe-Einstellungen eine Engine mit russischer Stimme.</string>
+    <string name="settings_speech_install">Russische Stimme herunterladen</string>
     <string name="settings_speech_test">Testen</string>
     <string name="settings_speech_open">Sprachausgabe-Einstellungen</string>
     <string name="settings_tenses">Abgefragte Zeitformen</string>

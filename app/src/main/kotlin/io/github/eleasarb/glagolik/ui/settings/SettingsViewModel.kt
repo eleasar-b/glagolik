@@ -47,6 +47,8 @@ data class SettingsUiState(
     val speech: SpeechAvailability = SpeechAvailability.INITIALIZING,
 )
 
+// One public method per settings action (UDF); splitting them up would not make it simpler.
+@Suppress("TooManyFunctions")
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val repository: SettingsRepository,
@@ -85,6 +87,11 @@ class SettingsViewModel @Inject constructor(
 
     fun onAutoPlayAudioChange(value: Boolean) {
         viewModelScope.launch { repository.setAutoPlayAudio(value) }
+    }
+
+    /** Checks the voice again unless it is ready (the learner may have installed one). */
+    fun onResume() {
+        speaker.refresh()
     }
 
     /** Plays a short sentence, so the learner can check voice and stress. */

@@ -18,6 +18,7 @@ private const val UTTERANCE_ID = "glagolik"
 
 /** [Speaker] backed by [TextToSpeech]. Create one per screen and close it when done. */
 class AndroidSpeaker(context: Context) : Speaker {
+    private val appContext = context.applicationContext
     private val _availability = MutableStateFlow(SpeechAvailability.INITIALIZING)
     override val availability: StateFlow<SpeechAvailability> = _availability.asStateFlow()
 
@@ -27,7 +28,13 @@ class AndroidSpeaker(context: Context) : Speaker {
     private var earlyStatus: Int? = null
 
     init {
-        engine = TextToSpeech(context.applicationContext) { status -> onInit(status) }
+        start()
+    }
+
+    private fun start() {
+        _availability.value = SpeechAvailability.INITIALIZING
+        earlyStatus = null
+        engine = TextToSpeech(appContext) { status -> onInit(status) }
         earlyStatus?.let { onInit(it) }
     }
 
@@ -38,22 +45,35 @@ class AndroidSpeaker(context: Context) : Speaker {
             return
         }
         if (_availability.value != SpeechAvailability.INITIALIZING) return
-        val ready = status == TextToSpeech.SUCCESS && useRussianVoice(tts)
-        _availability.value =
-            if (ready) SpeechAvailability.READY else SpeechAvailability.UNAVAILABLE
+        _availability.value = if (status == TextToSpeech.SUCCESS) {
+            useRussianVoice(tts)
+        } else {
+            SpeechAvailability.NO_ENGINE
+        }
     }
 
-    private fun useRussianVoice(tts: TextToSpeech): Boolean {
+    private fun useRussianVoice(tts: TextToSpeech): SpeechAvailability {
         val voices = tts.voices.orEmpty()
         val voice = selectRussianVoice(voices)
         return when {
-            voice != null -> tts.setVoice(voice) == TextToSpeech.SUCCESS
+            voice != null && tts.setVoice(voice) == TextToSpeech.SUCCESS -> {
+                SpeechAvailability.READY
+            }
 
             // Russian voices exist, but only online or not downloaded: do not use them.
-            voices.any { it.locale.isRussian() } -> false
+            voices.any { it.locale.isRussian() } -> SpeechAvailability.VOICE_NOT_INSTALLED
 
             // Engines that list no Russian voice (or none at all): try the language.
-            else -> tts.setLanguage(RUSSIAN_RUSSIA) >= TextToSpeech.LANG_AVAILABLE
+            else -> when (tts.setLanguage(RUSSIAN_RUSSIA)) {
+                TextToSpeech.LANG_AVAILABLE,
+                TextToSpeech.LANG_COUNTRY_AVAILABLE,
+                TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE,
+                -> SpeechAvailability.READY
+
+                TextToSpeech.LANG_MISSING_DATA -> SpeechAvailability.VOICE_NOT_INSTALLED
+
+                else -> SpeechAvailability.NO_RUSSIAN_VOICE
+            }
         }
     }
 
@@ -62,11 +82,24 @@ class AndroidSpeaker(context: Context) : Speaker {
         engine?.speak(text, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID)
     }
 
+    override fun refresh() {
+        val current = _availability.value
+        if (current == SpeechAvailability.INITIALIZING || current == SpeechAvailability.READY) {
+            return
+        }
+        release()
+        start()
+    }
+
     override fun close() {
+        release()
+        _availability.value = SpeechAvailability.NO_ENGINE
+    }
+
+    private fun release() {
         engine?.stop()
         engine?.shutdown()
         engine = null
-        _availability.value = SpeechAvailability.UNAVAILABLE
     }
 }
 

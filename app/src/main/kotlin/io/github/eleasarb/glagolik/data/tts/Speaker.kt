@@ -9,8 +9,14 @@ enum class SpeechAvailability {
     /** A Russian offline voice is ready. */
     READY,
 
-    /** No TTS engine or no Russian offline voice installed. */
-    UNAVAILABLE,
+    /** No TTS engine installed (or it failed to start). */
+    NO_ENGINE,
+
+    /** The engine knows Russian, but the voice is only online or not downloaded yet. */
+    VOICE_NOT_INSTALLED,
+
+    /** The engine has no Russian voice at all. */
+    NO_RUSSIAN_VOICE,
 }
 
 /**
@@ -25,4 +31,10 @@ interface Speaker : AutoCloseable {
      * still playing. Does nothing unless [availability] is [SpeechAvailability.READY].
      */
     fun speak(text: String)
+
+    /**
+     * Checks the engine again if no voice was ready, e.g. after the learner installed one
+     * in the system settings.
+     */
+    fun refresh()
 }

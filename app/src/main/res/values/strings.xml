@@ -89,7 +89,10 @@
     <string name="settings_auto_play_summary">After checking an answer. Needs a Russian offline voice in the system text-to-speech settings.</string>
     <string name="settings_speech_checking">Checking text-to-speech …</string>
     <string name="settings_speech_ready">Russian voice found. Speaker buttons appear after checking an answer and in the verb table.</string>
-    <string name="settings_speech_unavailable">No Russian offline voice found, so pronunciation is off. Install a text-to-speech app with a Russian voice (e.g. RHVoice or eSpeak NG), select it as the preferred engine and download the Russian voice.</string>
+    <string name="settings_speech_no_engine">No text-to-speech engine is installed, so pronunciation is off. Install one with a Russian voice and select it as the preferred engine.</string>
+    <string name="settings_speech_not_installed">The Russian voice of your text-to-speech engine is not downloaded (or only available online), so pronunciation is off. Download it, then come back here.</string>
+    <string name="settings_speech_no_russian">Your text-to-speech engine has no Russian voice, so pronunciation is off. Select an engine with a Russian voice in the text-to-speech settings.</string>
+    <string name="settings_speech_install">Download Russian voice</string>
     <string name="settings_speech_test">Test</string>
     <string name="settings_speech_open">Text-to-speech settings</string>
     <string name="settings_tenses">Quizzed tenses</string>

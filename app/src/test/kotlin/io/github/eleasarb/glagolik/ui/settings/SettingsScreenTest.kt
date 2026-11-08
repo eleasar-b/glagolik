@@ -97,24 +97,45 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun `missing voice is explained and system settings can be opened`() {
+    fun `missing engine is explained and system settings can be opened`() {
         var opened = false
         show(
             TrainingSettings(),
-            speech = SpeechAvailability.UNAVAILABLE,
+            speech = SpeechAvailability.NO_ENGINE,
             onOpenSpeechSettings = { opened = true },
         )
 
-        compose.onNodeWithText(context.getString(R.string.settings_speech_unavailable))
+        compose.onNodeWithText(context.getString(R.string.settings_speech_no_engine))
             .performScrollTo()
             .assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.settings_speech_test))
+            .assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.settings_speech_install))
             .assertDoesNotExist()
         compose.onNodeWithText(context.getString(R.string.settings_speech_open))
             .performScrollTo()
             .performClick()
 
         assertEquals(true, opened)
+    }
+
+    @Test
+    fun `voice that is not downloaded offers the download`() {
+        var install = false
+        show(
+            TrainingSettings(),
+            speech = SpeechAvailability.VOICE_NOT_INSTALLED,
+            onInstallVoice = { install = true },
+        )
+
+        compose.onNodeWithText(context.getString(R.string.settings_speech_not_installed))
+            .performScrollTo()
+            .assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.settings_speech_install))
+            .performScrollTo()
+            .performClick()
+
+        assertEquals(true, install)
     }
 
     @Test
@@ -190,6 +211,7 @@ class SettingsScreenTest {
         onAutoPlayAudioChange: (Boolean) -> Unit = {},
         speech: SpeechAvailability = SpeechAvailability.INITIALIZING,
         onSpeechTest: () -> Unit = {},
+        onInstallVoice: () -> Unit = {},
         onOpenSpeechSettings: () -> Unit = {},
         onTenseToggle: (Tense) -> Unit = {},
         backupStatus: BackupStatus? = null,
@@ -205,6 +227,7 @@ class SettingsScreenTest {
                     onStrictYoChange = onStrictYoChange,
                     onAutoPlayAudioChange = onAutoPlayAudioChange,
                     onSpeechTest = onSpeechTest,
+                    onInstallVoice = onInstallVoice,
                     onOpenSpeechSettings = onOpenSpeechSettings,
                     onTenseToggle = onTenseToggle,
                     onExportClick = onExportClick,

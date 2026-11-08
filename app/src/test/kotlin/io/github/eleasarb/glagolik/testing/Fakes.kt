@@ -228,6 +228,13 @@ class FakeSpeaker(initial: SpeechAvailability = SpeechAvailability.READY) : Spea
         if (availability.value == SpeechAvailability.READY) spoken += text
     }
 
+    var refreshes = 0
+        private set
+
+    override fun refresh() {
+        refreshes++
+    }
+
     override fun close() {
         isClosed = true
     }
