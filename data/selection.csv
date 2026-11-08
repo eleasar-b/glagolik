@@ -280,7 +280,7 @@ id,rank,infinitive,aspect,role
 279,280,замеча́ть,imperfective,core
 280,281,наблюда́ть,imperfective,core
 281,282,опусти́ть,perfective,core
-282,283,спе́шить,perfective,core
+943,283,спеши́ть,imperfective,core
 283,284,оберну́ться,perfective,core
 284,285,останови́ть,perfective,core
 285,286,кури́ть,imperfective,core
@@ -722,6 +722,7 @@ id,rank,infinitive,aspect,role
 721,1165,отвезти́,perfective,partner
 722,1170,узнава́ть,imperfective,partner
 723,1172,зале́зть,perfective,partner
+944,1179,поспеши́ть,perfective,partner
 724,1191,выводи́ть,imperfective,partner
 725,1195,постоя́ть,perfective,partner
 726,1197,поиска́ть,perfective,partner
@@ -931,7 +932,6 @@ id,rank,infinitive,aspect,role
 930,8894,наора́ть,perfective,partner
 931,8904,пожина́ть,imperfective,partner
 932,9304,повисе́ть,perfective,partner
-933,12683,спе́шивать,imperfective,partner
 934,12955,забоя́ться,perfective,partner
 935,13349,озна́чить,perfective,partner
 936,13962,прогова́ривать,imperfective,partner

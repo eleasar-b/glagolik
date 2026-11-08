@@ -21,6 +21,13 @@ enum class OverrideAction {
      * (e.g. быть: the present tense is not used in modern Russian).
      */
     NO_TRAINING,
+
+    /**
+     * Replace the frequency rank (the source row number) with the value. For rows where the
+     * source attaches the frequency of a homograph to the wrong entry; move the rank of both
+     * entries so every rank stays unique.
+     */
+    RANK,
 }
 
 data class Override(
@@ -35,6 +42,10 @@ data class Override(
     /** All targeted columns as written in `overrides.csv`. */
     val columns: List<String>
         get() = fields.map { it.column } + listOfNotNull(translation?.column)
+
+    /** What the override changes, for the import report. */
+    val target: String
+        get() = if (action == OverrideAction.RANK) "rank $value" else columns.joinToString(";")
 }
 
 class Overrides(private val entries: List<Override>) {
@@ -54,8 +65,13 @@ class Overrides(private val entries: List<Override>) {
         .toSet()
 
     fun apply(verb: SourceVerb): SourceVerb {
+        val rank = byKey[verb.key].orEmpty()
+            .lastOrNull { it.action == OverrideAction.RANK }
+            ?.value
+            ?.toInt()
+            ?: verb.rank
         val sets = byKey[verb.key].orEmpty().filter { it.action == OverrideAction.SET }
-        if (sets.isEmpty()) return verb
+        if (sets.isEmpty()) return verb.copy(rank = rank)
         val fields = verb.fields.toMutableMap()
         var translationEn = verb.translationEn
         var translationDe = verb.translationDe
@@ -68,6 +84,7 @@ class Overrides(private val entries: List<Override>) {
             }
         }
         return verb.copy(
+            rank = rank,
             translationEn = translationEn,
             translationDe = translationDe,
             fields = fields,
@@ -114,6 +131,12 @@ class Overrides(private val entries: List<Override>) {
             }
             require(translations.isEmpty() || value.isNotEmpty()) {
                 "overrides.csv:$line: SET of a translation needs a value"
+            }
+            require(action != OverrideAction.RANK || columns.isEmpty()) {
+                "overrides.csv:$line: RANK takes no fields"
+            }
+            require(action != OverrideAction.RANK || (value.toIntOrNull() ?: 0) > 0) {
+                "overrides.csv:$line: RANK needs a positive number as value"
             }
             require(action != OverrideAction.NO_TRAINING || fields.isNotEmpty()) {
                 "overrides.csv:$line: NO_TRAINING needs at least one field"

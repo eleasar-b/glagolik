@@ -23,3 +23,5 @@ accented,aspect,action,fields,value,reason
 выгля'дывать,imperfective,SET,translations_de,"hinaussehen, hinausschauen, hinauslehnen, hervorschauen, hervortreten; so aussehen, so wirken",typo 'ausehen'
 изменя'ть,imperfective,SET,translations_de,"ändern, verändern, wechseln, abtrünnig werden; betrügen, untreu sein, fremdgehen",typos 'wechslen' and 'abtrünig'
 поменя'ть,perfective,SET,translations_de,"ändern; tauschen, auswechseln",typo 'auswechslen'
+спеши'ть,imperfective,RANK,,283,homograph mix-up in source: rank 283 belongs to спеши́ть (hurry); swapped with спе́шить (dismount)
+спе'шить,perfective,RANK,,14547,homograph mix-up in source: the row carries the frequency and the English translation of спеши́ть (hurry); swapped with спеши́ть

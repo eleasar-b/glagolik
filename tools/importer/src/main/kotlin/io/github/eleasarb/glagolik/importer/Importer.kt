@@ -41,6 +41,7 @@ fun runImport(
         )
     }
 
+    checkUniqueRanks(source, overrides)
     val selection = select(source, overrides, coreSize)
     val errors = selection.core.flatMap { verb ->
         validate(verb, overrides.allowedMissing(verb.key)).map { "#${verb.rank} ${verb.key}: $it" }
@@ -70,6 +71,22 @@ fun runImport(
         selectionCsv = selectionCsv(verbs),
         report = report(selection, overrides, verbs),
     )
+}
+
+/** RANK overrides must leave every rank unique, otherwise the core set is ambiguous. */
+private fun checkUniqueRanks(source: List<SourceVerb>, overrides: Overrides) {
+    val duplicates = source.filterNot { overrides.isExcluded(it.key) }
+        .map(overrides::apply)
+        .groupBy { it.rank }
+        .filterValues { it.size > 1 }
+    if (duplicates.isNotEmpty()) {
+        throw ImportException(
+            "duplicate rank after RANK overrides:\n" +
+                duplicates.entries.joinToString("\n") { (rank, verbs) ->
+                    "  $rank: ${verbs.joinToString { it.key.toString() }}"
+                },
+        )
+    }
 }
 
 private fun toVerb(source: SourceVerb, id: Int, isCore: Boolean, overrides: Overrides): Verb {
@@ -111,8 +128,8 @@ private fun report(selection: Selection, overrides: Overrides, verbs: List<Verb>
         appendLine("## Overrides")
         appendLine()
         overrides.all.forEach { override ->
-            val fields = override.columns.joinToString(";")
-            appendLine("- ${override.action} ${override.key} $fields: ${override.reason}")
+            val line = "${override.action} ${override.key} ${override.target}: ${override.reason}"
+            appendLine("- $line")
         }
         appendLine()
         appendLine("## Partner notes")
