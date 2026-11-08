@@ -73,6 +73,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { repository.setStrictYo(value) }
     }
 
+    fun onAutoPlayAudioChange(value: Boolean) {
+        viewModelScope.launch { repository.setAutoPlayAudio(value) }
+    }
+
     fun onTenseToggle(tense: Tense) {
         val current = uiState.value.settings.tenses
         val updated = if (tense in current) current - tense else current + tense

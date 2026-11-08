@@ -33,6 +33,7 @@ class DataStoreSettingsRepositoryTest {
         repository.setNewFormsPerDay(25)
         repository.setSessionSize(30)
         repository.setStrictYo(true)
+        repository.setAutoPlayAudio(true)
         repository.setTenses(setOf(Tense.PAST, Tense.IMPERATIVE))
 
         assertEquals(
@@ -41,6 +42,7 @@ class DataStoreSettingsRepositoryTest {
                 sessionSize = 30,
                 strictYo = true,
                 tenses = setOf(Tense.PAST, Tense.IMPERATIVE),
+                autoPlayAudio = true,
             ),
             repository.current(),
         )

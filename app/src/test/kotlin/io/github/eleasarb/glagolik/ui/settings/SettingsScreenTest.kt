@@ -3,6 +3,8 @@ package io.github.eleasarb.glagolik.ui.settings
 import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -71,11 +73,26 @@ class SettingsScreenTest {
             onTenseToggle = { toggled = it },
         )
 
-        compose.onNode(isToggleable()).performClick()
-        compose.onNodeWithText(context.getString(R.string.tense_past)).performClick()
+        compose.onNode(isToggleable() and hasText(context.getString(R.string.settings_strict_yo)))
+            .performClick()
+        compose.onNodeWithText(context.getString(R.string.tense_past)).performScrollTo()
+            .performClick()
 
         assertEquals(true, strict)
         assertEquals(Tense.PAST, toggled)
+    }
+
+    @Test
+    fun `auto play switch reports changes`() {
+        var autoPlay: Boolean? = null
+        show(TrainingSettings(autoPlayAudio = true), onAutoPlayAudioChange = { autoPlay = it })
+
+        compose.onNode(isToggleable() and hasText(context.getString(R.string.settings_auto_play)))
+            .performScrollTo()
+            .assertIsOn()
+            .performClick()
+
+        assertEquals(false, autoPlay)
     }
 
     @Test
@@ -129,6 +146,7 @@ class SettingsScreenTest {
         onNewFormsPerDayChange: (Int) -> Unit = {},
         onSessionSizeChange: (Int) -> Unit = {},
         onStrictYoChange: (Boolean) -> Unit = {},
+        onAutoPlayAudioChange: (Boolean) -> Unit = {},
         onTenseToggle: (Tense) -> Unit = {},
         backupStatus: BackupStatus? = null,
         onExportClick: () -> Unit = {},
@@ -141,6 +159,7 @@ class SettingsScreenTest {
                     onNewFormsPerDayChange = onNewFormsPerDayChange,
                     onSessionSizeChange = onSessionSizeChange,
                     onStrictYoChange = onStrictYoChange,
+                    onAutoPlayAudioChange = onAutoPlayAudioChange,
                     onTenseToggle = onTenseToggle,
                     onExportClick = onExportClick,
                     onImportClick = onImportClick,

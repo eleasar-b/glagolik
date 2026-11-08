@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -81,6 +83,7 @@ fun SettingsRoute(
         onNewFormsPerDayChange = viewModel::onNewFormsPerDayChange,
         onSessionSizeChange = viewModel::onSessionSizeChange,
         onStrictYoChange = viewModel::onStrictYoChange,
+        onAutoPlayAudioChange = viewModel::onAutoPlayAudioChange,
         onTenseToggle = viewModel::onTenseToggle,
         onExportClick = { exportLauncher.launch(viewModel.exportFileName()) },
         onImportClick = { importLauncher.launch(IMPORT_MIME_TYPES) },
@@ -130,6 +133,7 @@ fun SettingsScreen(
     onNewFormsPerDayChange: (Int) -> Unit,
     onSessionSizeChange: (Int) -> Unit,
     onStrictYoChange: (Boolean) -> Unit,
+    onAutoPlayAudioChange: (Boolean) -> Unit,
     onTenseToggle: (Tense) -> Unit,
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
@@ -165,6 +169,7 @@ fun SettingsScreen(
                 onNewFormsPerDayChange = onNewFormsPerDayChange,
                 onSessionSizeChange = onSessionSizeChange,
                 onStrictYoChange = onStrictYoChange,
+                onAutoPlayAudioChange = onAutoPlayAudioChange,
                 onTenseToggle = onTenseToggle,
             )
             HorizontalDivider()
@@ -177,6 +182,35 @@ fun SettingsScreen(
     }
 }
 
+@Composable
+private fun SwitchSetting(
+    label: String,
+    summary: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // The whole row toggles, so label and switch form one target for touch and TalkBack.
+    Row(
+        modifier = modifier.toggleable(
+            value = checked,
+            role = Role.Switch,
+            onValueChange = onCheckedChange,
+        ),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = label, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = summary,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = checked, onCheckedChange = null)
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TrainingSettingsSection(
@@ -184,6 +218,7 @@ private fun TrainingSettingsSection(
     onNewFormsPerDayChange: (Int) -> Unit,
     onSessionSizeChange: (Int) -> Unit,
     onStrictYoChange: (Boolean) -> Unit,
+    onAutoPlayAudioChange: (Boolean) -> Unit,
     onTenseToggle: (Tense) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -201,20 +236,18 @@ private fun TrainingSettingsSection(
             onValueChange = onSessionSizeChange,
         )
         HorizontalDivider()
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.settings_strict_yo),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Text(
-                    text = stringResource(R.string.settings_strict_yo_summary),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Switch(checked = settings.strictYo, onCheckedChange = onStrictYoChange)
-        }
+        SwitchSetting(
+            label = stringResource(R.string.settings_strict_yo),
+            summary = stringResource(R.string.settings_strict_yo_summary),
+            checked = settings.strictYo,
+            onCheckedChange = onStrictYoChange,
+        )
+        SwitchSetting(
+            label = stringResource(R.string.settings_auto_play),
+            summary = stringResource(R.string.settings_auto_play_summary),
+            checked = settings.autoPlayAudio,
+            onCheckedChange = onAutoPlayAudioChange,
+        )
         HorizontalDivider()
         Text(
             text = stringResource(R.string.settings_tenses),
@@ -351,6 +384,7 @@ private fun SettingsScreenPreview() {
             onNewFormsPerDayChange = {},
             onSessionSizeChange = {},
             onStrictYoChange = {},
+            onAutoPlayAudioChange = {},
             onTenseToggle = {},
             onExportClick = {},
             onImportClick = {},

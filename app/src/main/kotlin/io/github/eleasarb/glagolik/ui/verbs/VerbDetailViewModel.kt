@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.eleasarb.glagolik.data.repository.ProgressRepository
 import io.github.eleasarb.glagolik.data.repository.VerbRepository
+import io.github.eleasarb.glagolik.data.tts.Speaker
+import io.github.eleasarb.glagolik.data.tts.SpeechAvailability
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.model.MasteryLevel
@@ -30,6 +32,8 @@ sealed interface VerbDetailUiState {
         val verb: VerbDetail,
         /** Level of every trainable form; forms marked NO_TRAINING have no entry. */
         val mastery: Map<FormKey, MasteryLevel> = emptyMap(),
+        /** A Russian voice is available; infinitive and forms can be spoken. */
+        val canSpeak: Boolean = false,
     ) : VerbDetailUiState {
         val masteryCounts: MasteryCounts get() = MasteryCounts.of(mastery.values)
     }
@@ -40,7 +44,8 @@ class VerbDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: VerbRepository,
     private val progress: ProgressRepository,
-) : ViewModel() {
+    private val speaker: Speaker,
+) : ViewModel(speaker) {
     private val verbId: Int = checkNotNull(savedStateHandle[VERB_ID_ARG])
 
     private val detail = flow { emit(repository.getVerbDetail(verbId)) }
@@ -48,7 +53,8 @@ class VerbDetailViewModel @Inject constructor(
     val uiState: StateFlow<VerbDetailUiState> = combine(
         detail,
         progress.observeCards(verbId),
-    ) { verb, cards ->
+        speaker.availability,
+    ) { verb, cards, availability ->
         if (verb == null) {
             VerbDetailUiState.NotFound
         } else {
@@ -57,6 +63,7 @@ class VerbDetailViewModel @Inject constructor(
                 mastery = verb.forms
                     .filter { it.isTrainable }
                     .associate { it.key to cards[it.key].masteryLevel() },
+                canSpeak = availability == SpeechAvailability.READY,
             )
         }
     }.stateIn(
@@ -64,6 +71,11 @@ class VerbDetailViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
         initialValue = VerbDetailUiState.Loading,
     )
+
+    /** Speaks [text] as written (stress marks included). */
+    fun onSpeak(text: String) {
+        speaker.speak(text)
+    }
 
     private companion object {
         const val STOP_TIMEOUT_MILLIS = 5_000L

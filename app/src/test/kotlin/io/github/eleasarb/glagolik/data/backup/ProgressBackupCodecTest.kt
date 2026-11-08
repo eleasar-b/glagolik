@@ -5,6 +5,7 @@ import io.github.eleasarb.glagolik.data.db.ReviewLogEntity
 import io.github.eleasarb.glagolik.domain.model.Tense
 import io.github.eleasarb.glagolik.domain.model.TrainingSettings
 import java.time.Instant
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -22,6 +23,7 @@ class ProgressBackupCodecTest {
             sessionSize = 25,
             strictYo = true,
             tenses = setOf(Tense.FUTURE, Tense.PAST),
+            autoPlayAudio = true,
         ),
         cards = listOf(
             CardEntity(
@@ -56,6 +58,16 @@ class ProgressBackupCodecTest {
     @Test
     fun `encode and decode round-trip all fields`() {
         assertEquals(backup, ProgressBackupCodec.decode(ProgressBackupCodec.encode(backup)))
+    }
+
+    @Test
+    fun `files without the audio setting from 0_1 are still accepted`() {
+        val json = JSONObject(ProgressBackupCodec.encode(backup))
+        json.getJSONObject("settings").remove("autoPlayAudio")
+        val old = json.toString()
+        assertTrue(!old.contains("autoPlayAudio"))
+
+        assertEquals(false, ProgressBackupCodec.decode(old).settings.autoPlayAudio)
     }
 
     @Test

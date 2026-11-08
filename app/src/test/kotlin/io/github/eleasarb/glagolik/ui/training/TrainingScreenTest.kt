@@ -129,6 +129,32 @@ class TrainingScreenTest {
     }
 
     @Test
+    fun `speaker button appears after grading when a voice is available`() {
+        var spoken = 0
+        val graded = question("скажешь", AnswerResult.Correct("ска́жешь"))
+        show(graded.copy(canSpeak = true), onSpeak = { spoken++ })
+
+        compose.onNodeWithContentDescription(string(R.string.speak)).performScrollTo()
+            .performClick()
+
+        assertEquals(1, spoken)
+    }
+
+    @Test
+    fun `no speaker button without a voice`() {
+        show(question("скажешь", AnswerResult.Correct("ска́жешь")).copy(canSpeak = false))
+
+        compose.onNodeWithContentDescription(string(R.string.speak)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `no speaker button before grading`() {
+        show(question().copy(canSpeak = true))
+
+        compose.onNodeWithContentDescription(string(R.string.speak)).assertDoesNotExist()
+    }
+
+    @Test
     fun `yo hint is shown`() {
         show(question("идет", AnswerResult.Correct("идёт", yoTypedAsYe = true)))
 
@@ -189,6 +215,7 @@ class TrainingScreenTest {
         onSubmit: () -> Unit = {},
         onContinue: (Boolean) -> Unit = {},
         onClose: () -> Unit = {},
+        onSpeak: () -> Unit = {},
     ) {
         compose.setContent {
             GlagolikTheme(dynamicColor = false) {
@@ -198,6 +225,7 @@ class TrainingScreenTest {
                     onSubmit = onSubmit,
                     onContinue = onContinue,
                     onClose = onClose,
+                    onSpeak = onSpeak,
                 )
             }
         }

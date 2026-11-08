@@ -7,6 +7,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.eleasarb.glagolik.data.repository.ProgressRepository
 import io.github.eleasarb.glagolik.data.repository.VerbRepository
 import io.github.eleasarb.glagolik.data.settings.SettingsRepository
+import io.github.eleasarb.glagolik.data.tts.Speaker
+import io.github.eleasarb.glagolik.data.tts.SpeechAvailability
 import io.github.eleasarb.glagolik.domain.checking.AnswerChecker
 import io.github.eleasarb.glagolik.domain.checking.AnswerResult
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
@@ -43,6 +45,8 @@ sealed interface TrainingUiState {
          * they are loading.
          */
         val tenseForms: List<ConjugatedForm> = emptyList(),
+        /** A Russian voice is available; the correct form can be spoken once graded. */
+        val canSpeak: Boolean = false,
     ) : TrainingUiState {
         /** Correct or Incorrect: the card is graded and the next step is "continue". */
         val isGraded: Boolean
@@ -56,6 +60,8 @@ sealed interface TrainingUiState {
  * Runs one session. Rating (CLAUDE.md §6): wrong = AGAIN, right = GOOD, right + "easy" =
  * EASY. The rating is stored when the learner continues. Wrong cards come back at the end
  * of the session until they are answered correctly.
+ *
+ * Audio: once graded, the correct form can be spoken, automatically if the setting is on.
  */
 @HiltViewModel
 class TrainingViewModel @Inject constructor(
@@ -63,8 +69,9 @@ class TrainingViewModel @Inject constructor(
     private val progress: ProgressRepository,
     private val verbs: VerbRepository,
     private val settings: SettingsRepository,
+    private val speaker: Speaker,
     private val clock: Clock,
-) : ViewModel() {
+) : ViewModel(speaker) {
     private val _uiState = MutableStateFlow<TrainingUiState>(TrainingUiState.Loading)
     val uiState: StateFlow<TrainingUiState> = _uiState.asStateFlow()
 
@@ -74,12 +81,30 @@ class TrainingViewModel @Inject constructor(
     private var correctFirstTry = 0
     private val failedOnce = mutableSetOf<SessionCard>()
     private var checker = AnswerChecker()
+    private var autoPlayAudio = false
+    private var canSpeak = false
     private var shownAt: Instant = clock.instant()
     private var answerDuration: Duration? = null
 
     init {
         viewModelScope.launch {
-            checker = AnswerChecker(strictYo = settings.current().strictYo)
+            speaker.availability.collect { availability ->
+                canSpeak = availability == SpeechAvailability.READY
+                _uiState.update { state ->
+                    if (state is TrainingUiState.Question) {
+                        state.copy(
+                            canSpeak = canSpeak,
+                        )
+                    } else {
+                        state
+                    }
+                }
+            }
+        }
+        viewModelScope.launch {
+            val current = settings.current()
+            checker = AnswerChecker(strictYo = current.strictYo)
+            autoPlayAudio = current.autoPlayAudio
             val session = buildSession()
             queue.addAll(session.cards)
             sessionCards = session.cards.size
@@ -110,6 +135,18 @@ class TrainingViewModel @Inject constructor(
         }
         _uiState.value = state.copy(feedback = result)
         if (result is AnswerResult.Incorrect) showTense(state)
+        if (autoPlayAudio) onSpeak()
+    }
+
+    /** Speaks the correct form; only after the answer is graded, so it never gives it away. */
+    fun onSpeak() {
+        val state = _uiState.value as? TrainingUiState.Question ?: return
+        val form = when (val feedback = state.feedback) {
+            is AnswerResult.Correct -> feedback.matched
+            is AnswerResult.Incorrect -> feedback.expected.firstOrNull()
+            else -> null
+        }
+        form?.let(speaker::speak)
     }
 
     private fun showTense(state: TrainingUiState.Question) {
@@ -162,6 +199,7 @@ class TrainingViewModel @Inject constructor(
             card = queue.first(),
             position = position,
             total = position - 1 + queue.size,
+            canSpeak = canSpeak,
         )
     }
 }

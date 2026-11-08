@@ -2,6 +2,13 @@
 <!-- Guardrail: no INTERNET permission. The app works fully offline. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Package visibility (API 30+): needed to bind the system text-to-speech engine. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+
     <application
         android:name=".GlagolikApplication"
         android:allowBackup="true"

@@ -113,6 +113,28 @@ class VerbDetailScreenTest {
     }
 
     @Test
+    fun `speaker button speaks the infinitive and a tap on a form speaks its variants`() {
+        val spoken = mutableListOf<String>()
+        show(VerbDetailUiState.Success(podnyat, canSpeak = true), onSpeak = { spoken += it })
+
+        compose.onNodeWithContentDescription(context.getString(R.string.speak)).performClick()
+        compose.onNodeWithText("по́днял · подня́л").performScrollTo().performClick()
+
+        assertEquals(listOf("подня́ть", "по́днял, подня́л"), spoken)
+    }
+
+    @Test
+    fun `without a voice nothing can be spoken`() {
+        val spoken = mutableListOf<String>()
+        show(VerbDetailUiState.Success(podnyat, canSpeak = false), onSpeak = { spoken += it })
+
+        compose.onNodeWithContentDescription(context.getString(R.string.speak)).assertDoesNotExist()
+        compose.onNodeWithText("по́днял · подня́л").performScrollTo().performClick()
+
+        assertEquals(emptyList<String>(), spoken)
+    }
+
+    @Test
     fun `tapping a partner reports its id`() {
         var clicked: Int? = null
         show(VerbDetailUiState.Success(podnyat), onPartnerClick = { clicked = it })
@@ -164,10 +186,16 @@ class VerbDetailScreenTest {
         state: VerbDetailUiState,
         onBack: () -> Unit = {},
         onPartnerClick: (Int) -> Unit = {},
+        onSpeak: (String) -> Unit = {},
     ) {
         compose.setContent {
             GlagolikTheme(dynamicColor = false) {
-                VerbDetailScreen(uiState = state, onBack = onBack, onPartnerClick = onPartnerClick)
+                VerbDetailScreen(
+                    uiState = state,
+                    onBack = onBack,
+                    onPartnerClick = onPartnerClick,
+                    onSpeak = onSpeak,
+                )
             }
         }
     }
