@@ -28,7 +28,13 @@
     <string name="mastery_forms">Formen</string>
     <string name="mastery_meaning">Bedeutung</string>
     <string name="mastery_due">Jetzt fällig: %1$d</string>
-    <string name="mastery_explanation">Gefestigt: Die nächste Wiederholung ist mindestens drei Wochen entfernt.</string>
+    <!-- %1$d: learned cards, %2$d: all cards, %3$s: share as percentage -->
+    <plurals name="mastery_learned">
+        <item quantity="one">%1$d von %2$d gelernt · %3$s</item>
+        <item quantity="other">%1$d von %2$d gelernt · %3$s</item>
+    </plurals>
+    <string name="mastery_verbs_started">Verben angefangen: %1$d von %2$d</string>
+    <string name="mastery_explanation">Gelernt: mindestens einmal geübt. Gefestigt: Die nächste Wiederholung ist mindestens drei Wochen entfernt.</string>
     <plurals name="mastery_summary">
         <item quantity="one">%1$d von %2$d Form gefestigt</item>
         <item quantity="other">%1$d von %2$d Formen gefestigt</item>

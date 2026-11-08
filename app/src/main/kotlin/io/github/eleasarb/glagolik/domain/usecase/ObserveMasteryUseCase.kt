@@ -68,12 +68,13 @@ internal fun overview(
     now: Instant,
 ): MasteryOverview {
     fun counts(keys: List<CardKey>) = MasteryCounts.of(keys.map { cards[it].masteryLevel() })
+    val all = refs.forms + refs.meaning
     return MasteryOverview(
         forms = counts(refs.forms),
         byVerb = refs.forms.groupBy { it.verbId }.mapValues { (_, keys) -> counts(keys) },
-        dueNow = (refs.forms + refs.meaning).count { key ->
-            cards[key]?.let { !it.due.isAfter(now) } ?: false
-        },
+        dueNow = all.count { key -> cards[key]?.let { !it.due.isAfter(now) } ?: false },
         meaning = counts(refs.meaning),
+        startedVerbs = all.filter { it in cards }.distinctBy { it.verbId }.size,
+        totalVerbs = all.distinctBy { it.verbId }.size,
     )
 }

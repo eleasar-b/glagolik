@@ -105,6 +105,16 @@ class ObserveMasteryUseCaseTest {
         assertEquals(MasteryCounts(new = 5), overview.forms)
         // The DE-RU card of verb 1 is due; verb 11 has no meaning cards.
         assertEquals(1, overview.dueNow)
+        // Verb 1 has answered cards; 8 verbs with meaning cards plus the verbs of the forms.
+        assertEquals(1, overview.startedVerbs)
+        assertEquals(
+            (
+                verbs.map {
+                    it.id
+                } - 11 + forms.map { it.verb.id }
+                ).toSet().size,
+            overview.totalVerbs,
+        )
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

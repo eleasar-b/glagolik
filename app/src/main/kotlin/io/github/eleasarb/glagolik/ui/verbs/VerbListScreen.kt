@@ -58,7 +58,7 @@ internal const val VERB_LIST_TAG = "verb-list"
 private val FAB_CLEARANCE = 88.dp
 
 /** Wide enough for "18/18", so the bars of all rows end at the same position. */
-private val FRACTION_MIN_WIDTH = 40.dp
+private val PERCENT_MIN_WIDTH = 40.dp
 
 @Composable
 fun VerbListRoute(
@@ -215,7 +215,7 @@ private fun VerbRow(
     }
 }
 
-/** Bar and "mature/total" for a verb with at least one answered form. */
+/** Bar and share of learned forms for a verb with at least one answered form. */
 @Composable
 private fun VerbMastery(counts: MasteryCounts, modifier: Modifier = Modifier) {
     Row(
@@ -225,10 +225,10 @@ private fun VerbMastery(counts: MasteryCounts, modifier: Modifier = Modifier) {
     ) {
         MasteryBar(counts = counts, modifier = Modifier.weight(1f))
         Text(
-            text = stringResource(R.string.mastery_fraction, counts.mature, counts.total),
+            text = counts.learnedPercentText(),
             style = MaterialTheme.typography.labelSmall,
             textAlign = TextAlign.End,
-            modifier = Modifier.widthIn(min = FRACTION_MIN_WIDTH),
+            modifier = Modifier.widthIn(min = PERCENT_MIN_WIDTH),
         )
     }
 }
@@ -253,6 +253,8 @@ private fun VerbListScreenPreview() {
                     ),
                     dueNow = 3,
                     meaning = MasteryCounts(new = 2, young = 1, mature = 1),
+                    startedVerbs = 1,
+                    totalVerbs = 2,
                 ),
             ),
             onQueryChange = {},

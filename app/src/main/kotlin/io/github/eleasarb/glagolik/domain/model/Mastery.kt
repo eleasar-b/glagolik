@@ -40,8 +40,11 @@ data class MasteryCounts(
 ) {
     val total: Int get() = new + learning + young + mature
 
+    /** Answered at least once (learning, young or mature). */
+    val learned: Int get() = total - new
+
     /** At least one form was answered. */
-    val isStarted: Boolean get() = total > new
+    val isStarted: Boolean get() = learned > 0
 
     operator fun get(level: MasteryLevel): Int = when (level) {
         MasteryLevel.NEW -> new
@@ -73,4 +76,8 @@ data class MasteryOverview(
     val dueNow: Int,
     /** Both meaning directions of every verb that takes part. */
     val meaning: MasteryCounts = MasteryCounts(),
+    /** Verbs with at least one answered card (form or meaning). */
+    val startedVerbs: Int = 0,
+    /** Verbs with at least one trainable card. */
+    val totalVerbs: Int = 0,
 )

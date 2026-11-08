@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -29,7 +30,8 @@ import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
 
 /**
  * Mastery of all trainable cards, shown above the verb list: one bar for the forms and one for
- * the meaning (both directions), each with "mature/total".
+ * the meaning (both directions), each with the learned cards and their share, then the number
+ * of started verbs.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -61,6 +63,14 @@ fun MasteryOverviewCard(overview: MasteryOverview, modifier: Modifier = Modifier
                 counts = overview.meaning,
                 summary = R.plurals.mastery_summary_cards,
             )
+            Text(
+                text = stringResource(
+                    R.string.mastery_verbs_started,
+                    overview.startedVerbs,
+                    overview.totalVerbs,
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+            )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 MASTERY_DISPLAY_ORDER.forEach { level -> LegendItem(level = level) }
             }
@@ -73,7 +83,7 @@ fun MasteryOverviewCard(overview: MasteryOverview, modifier: Modifier = Modifier
     }
 }
 
-/** Label with "mature/total" above the bar of one exercise kind. */
+/** Label with "x of y learned · z %" above the bar of one exercise kind. */
 @Composable
 private fun KindMastery(
     label: String,
@@ -89,7 +99,13 @@ private fun KindMastery(
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = stringResource(R.string.mastery_fraction, counts.mature, counts.total),
+                text = pluralStringResource(
+                    R.plurals.mastery_learned,
+                    counts.total,
+                    counts.learned,
+                    counts.total,
+                    counts.learnedPercentText(),
+                ),
                 style = MaterialTheme.typography.labelMedium,
             )
         }
@@ -124,6 +140,8 @@ private fun MasteryOverviewCardPreview() {
                 byVerb = emptyMap(),
                 dueNow = 17,
                 meaning = MasteryCounts(new = 1_080, learning = 12, young = 60, mature = 48),
+                startedVerbs = 41,
+                totalVerbs = 600,
             ),
         )
     }

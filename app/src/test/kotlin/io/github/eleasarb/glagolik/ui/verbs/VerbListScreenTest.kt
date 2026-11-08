@@ -90,18 +90,22 @@ class VerbListScreenTest {
         ),
         dueNow = 5,
         meaning = MasteryCounts(new = 6, young = 1, mature = 1),
+        startedVerbs = 1,
+        totalVerbs = 2,
     )
 
     @Test
-    fun `overview shows a forms and a meaning bar and the due cards`() {
+    fun `overview shows learned cards with share, started verbs and the due cards`() {
         show(VerbListUiState(verbs = verbs, isLoading = false, mastery = mastery))
 
         compose.onNodeWithText(context.getString(R.string.mastery_title)).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.mastery_due, 5)).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.mastery_forms)).assertIsDisplayed()
-        compose.onNodeWithText("4/39").assertIsDisplayed()
+        // Learned = learning + young + mature, rounded down.
+        compose.onNodeWithText("9 of 39 learned · 23%").assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.mastery_meaning)).assertIsDisplayed()
-        compose.onNodeWithText("1/8").assertIsDisplayed()
+        compose.onNodeWithText("2 of 8 learned · 25%").assertIsDisplayed()
+        compose.onNodeWithText("Verbs started: 1 of 2").assertIsDisplayed()
         val meaningBar =
             context.resources.getQuantityString(R.plurals.mastery_summary_cards, 8, 1, 8)
         compose.onNodeWithContentDescription(meaningBar).assertIsDisplayed()
@@ -121,8 +125,9 @@ class VerbListScreenTest {
         // Below the overview card (index 0) and the first verb.
         compose.onNodeWithTag(VERB_LIST_TAG).performScrollToIndex(2)
 
-        compose.onNodeWithText("4/17").assertIsDisplayed()
-        compose.onNodeWithText("0/17").assertDoesNotExist()
+        // 9 of 17 learned = 52.9 %, rounded down.
+        compose.onNodeWithText("52%").assertIsDisplayed()
+        compose.onNodeWithText("0%").assertDoesNotExist()
         val summary = context.resources.getQuantityString(R.plurals.mastery_summary, 17, 4, 17)
         compose.onNodeWithContentDescription(summary).assertIsDisplayed()
     }
