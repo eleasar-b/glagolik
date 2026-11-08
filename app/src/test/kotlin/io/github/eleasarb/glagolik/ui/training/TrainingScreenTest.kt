@@ -16,10 +16,10 @@ import io.github.eleasarb.glagolik.domain.checking.AnswerResult
 import io.github.eleasarb.glagolik.domain.model.Aspect
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
 import io.github.eleasarb.glagolik.domain.model.FormKey
-import io.github.eleasarb.glagolik.domain.model.FormRef
 import io.github.eleasarb.glagolik.domain.model.TrainableForm
 import io.github.eleasarb.glagolik.domain.model.Translation
 import io.github.eleasarb.glagolik.domain.model.VerbSummary
+import io.github.eleasarb.glagolik.domain.usecase.ConjugationTask
 import io.github.eleasarb.glagolik.domain.usecase.SessionCard
 import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
 import org.junit.Assert.assertEquals
@@ -36,10 +36,12 @@ class TrainingScreenTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
     private val card = SessionCard(
-        form = TrainableForm(
-            ref = FormRef(2, FormKey.FUTURE_SG2),
-            verb = VerbSummary(2, "сказа́ть", Aspect.PERFECTIVE, Translation("sagen", "say")),
-            expected = listOf("ска́жешь"),
+        task = ConjugationTask(
+            TrainableForm(
+                verb = VerbSummary(2, "сказа́ть", Aspect.PERFECTIVE, Translation("sagen", "say")),
+                form = FormKey.FUTURE_SG2,
+                expected = listOf("ска́жешь"),
+            ),
         ),
         isNew = true,
     )

@@ -23,6 +23,13 @@ interface VerbDao {
     )
     fun observeCoreVerbs(query: String): Flow<List<VerbEntity>>
 
+    @Query("SELECT * FROM verb WHERE is_core = 1 ORDER BY frequency_rank")
+    suspend fun getCoreVerbs(): List<VerbEntity>
+
+    /** All aspect partner links; each pair is stored in both directions. */
+    @Query("SELECT * FROM aspect_partner")
+    suspend fun getAllPartners(): List<AspectPartnerEntity>
+
     @Query("SELECT * FROM verb WHERE id = :id")
     suspend fun getVerb(id: Int): VerbEntity?
 

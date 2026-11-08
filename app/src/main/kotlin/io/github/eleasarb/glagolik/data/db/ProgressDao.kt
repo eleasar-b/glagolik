@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ProgressDao {
-    @Query("SELECT * FROM card WHERE verb_id = :verbId AND form = :form")
-    suspend fun getCard(verbId: Int, form: String): CardEntity?
+    @Query("SELECT * FROM card WHERE verb_id = :verbId AND item = :item")
+    suspend fun getCard(verbId: Int, item: String): CardEntity?
 
     /** Cards due at or before [now], most overdue first. */
     @Query("SELECT * FROM card WHERE due_at <= :now ORDER BY due_at LIMIT :limit")
@@ -34,8 +34,10 @@ interface ProgressDao {
     @Insert
     suspend fun insertLog(log: ReviewLogEntity)
 
-    @Query("SELECT * FROM review_log WHERE verb_id = :verbId AND form = :form ORDER BY reviewed_at")
-    suspend fun getLogs(verbId: Int, form: String): List<ReviewLogEntity>
+    @Query(
+        "SELECT * FROM review_log WHERE verb_id = :verbId AND item = :item ORDER BY reviewed_at",
+    )
+    suspend fun getLogs(verbId: Int, item: String): List<ReviewLogEntity>
 
     /** Card and log are written together or not at all. */
     @Transaction

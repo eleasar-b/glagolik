@@ -9,6 +9,7 @@ import io.github.eleasarb.glagolik.domain.model.TrainingSettings
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.domain.usecase.BuildSessionUseCase
+import io.github.eleasarb.glagolik.domain.usecase.ConjugationTask
 import io.github.eleasarb.glagolik.testing.FakeProgressRepository
 import io.github.eleasarb.glagolik.testing.FakeSettingsRepository
 import io.github.eleasarb.glagolik.testing.FakeSpeaker
@@ -46,7 +47,7 @@ class TrainingViewModelTest {
     )
 
     private fun viewModel(
-        settings: TrainingSettings = TrainingSettings(newFormsPerDay = 1),
+        settings: TrainingSettings = TrainingSettings(newCardsPerDay = 1),
         forms: List<TrainableForm> = listOf(skazhu),
         details: Map<Int, VerbDetail> = mapOf(2 to skazatDetail),
     ): TrainingViewModel {
@@ -75,7 +76,7 @@ class TrainingViewModelTest {
     fun `session starts with the first card`() {
         val question = viewModel().question()
 
-        assertEquals(skazhu, question.card.form)
+        assertEquals(ConjugationTask(skazhu), question.card.task)
         assertEquals(1, question.position)
         assertEquals(1, question.total)
         assertEquals(null, question.feedback)
@@ -89,7 +90,7 @@ class TrainingViewModelTest {
 
         vm.onContinue()
 
-        assertEquals(listOf(skazhu.ref to Rating.GOOD), progress.reviews)
+        assertEquals(listOf(skazhu.key to Rating.GOOD), progress.reviews)
         assertEquals(TrainingUiState.Finished(cards = 1, correctFirstTry = 1), vm.uiState.value)
     }
 
@@ -99,7 +100,7 @@ class TrainingViewModelTest {
         vm.answer("скажу")
         vm.onContinue(easy = true)
 
-        assertEquals(listOf(skazhu.ref to Rating.EASY), progress.reviews)
+        assertEquals(listOf(skazhu.key to Rating.EASY), progress.reviews)
     }
 
     @Test
@@ -110,9 +111,9 @@ class TrainingViewModelTest {
 
         vm.onContinue(easy = true) // easy is ignored after a wrong answer
 
-        assertEquals(listOf(skazhu.ref to Rating.AGAIN), progress.reviews)
+        assertEquals(listOf(skazhu.key to Rating.AGAIN), progress.reviews)
         val again = vm.question()
-        assertEquals(skazhu, again.card.form)
+        assertEquals(ConjugationTask(skazhu), again.card.task)
         assertEquals(2, again.position)
         assertEquals("", again.input)
 
@@ -163,7 +164,7 @@ class TrainingViewModelTest {
 
     @Test
     fun `auto play speaks the matched form after a correct answer`() {
-        val vm = viewModel(TrainingSettings(newFormsPerDay = 1, autoPlayAudio = true))
+        val vm = viewModel(TrainingSettings(newCardsPerDay = 1, autoPlayAudio = true))
         vm.answer("скажу")
 
         assertEquals(listOf("скажу́"), speaker.spoken)
@@ -171,7 +172,7 @@ class TrainingViewModelTest {
 
     @Test
     fun `auto play does not speak for an ungraded input`() {
-        val vm = viewModel(TrainingSettings(newFormsPerDay = 1, autoPlayAudio = true))
+        val vm = viewModel(TrainingSettings(newCardsPerDay = 1, autoPlayAudio = true))
         vm.answer("ckaжу")
 
         assertEquals(emptyList<String>(), speaker.spoken)
@@ -215,7 +216,7 @@ class TrainingViewModelTest {
 
     @Test
     fun `strict yo setting is applied`() {
-        val vm = viewModel(TrainingSettings(newFormsPerDay = 1, strictYo = true), listOf(idet))
+        val vm = viewModel(TrainingSettings(newCardsPerDay = 1, strictYo = true), listOf(idet))
         vm.answer("идет")
 
         assertEquals(
@@ -226,25 +227,25 @@ class TrainingViewModelTest {
 
     @Test
     fun `empty session shows nothing to do`() {
-        val vm = viewModel(TrainingSettings(newFormsPerDay = 0))
+        val vm = viewModel(TrainingSettings(newCardsPerDay = 0))
         assertEquals(TrainingUiState.NothingToDo, vm.uiState.value)
     }
 
     @Test
     fun `progress counts the remaining queue`() {
         val vm = viewModel(
-            TrainingSettings(newFormsPerDay = 2),
+            TrainingSettings(newCardsPerDay = 2),
             listOf(skazhu, trainableForm(2, FormKey.PAST_M, "сказа́л")),
         )
         assertEquals(2, vm.question().total)
-        val first = vm.question().card.form.ref
+        val first = vm.question().card.task.key
         vm.answer("неверно")
         vm.onContinue()
 
         // The failed card goes to the end: one more card in total, the other form is next.
         assertEquals(3, vm.question().total)
         assertEquals(2, vm.question().position)
-        assertTrue(vm.question().card.form.ref != first)
+        assertTrue(vm.question().card.task.key != first)
     }
 
     private companion object {

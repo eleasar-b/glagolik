@@ -30,32 +30,44 @@ class DataStoreSettingsRepositoryTest {
     @Test
     fun `values are stored and read back`() = runTest {
         val repository = repository()
-        repository.setNewFormsPerDay(25)
+        repository.setNewCardsPerDay(25)
         repository.setSessionSize(30)
         repository.setStrictYo(true)
         repository.setAutoPlayAudio(true)
+        repository.setPracticeMeaning(false)
         repository.setTenses(setOf(Tense.PAST, Tense.IMPERATIVE))
 
         assertEquals(
             TrainingSettings(
-                newFormsPerDay = 25,
+                newCardsPerDay = 25,
                 sessionSize = 30,
                 strictYo = true,
                 tenses = setOf(Tense.PAST, Tense.IMPERATIVE),
                 autoPlayAudio = true,
+                practiceMeaning = false,
             ),
             repository.current(),
         )
     }
 
     @Test
+    fun `meaning practice is on by default and survives replaceAll`() = runTest {
+        val repository = repository()
+        assertEquals(true, repository.current().practiceMeaning)
+
+        repository.replaceAll(TrainingSettings(practiceMeaning = false))
+
+        assertEquals(false, repository.current().practiceMeaning)
+    }
+
+    @Test
     fun `numbers are clamped to their ranges`() = runTest {
         val repository = repository()
-        repository.setNewFormsPerDay(-5)
+        repository.setNewCardsPerDay(-5)
         repository.setSessionSize(1_000)
 
         val settings = repository.current()
-        assertEquals(TrainingSettings.NEW_FORMS_RANGE.first, settings.newFormsPerDay)
+        assertEquals(TrainingSettings.NEW_CARDS_RANGE.first, settings.newCardsPerDay)
         assertEquals(TrainingSettings.SESSION_SIZE_RANGE.last, settings.sessionSize)
     }
 

@@ -3,8 +3,8 @@ package io.github.eleasarb.glagolik.data.repository
 import io.github.eleasarb.glagolik.data.db.CardEntity
 import io.github.eleasarb.glagolik.data.db.ProgressDao
 import io.github.eleasarb.glagolik.data.db.ReviewLogEntity
-import io.github.eleasarb.glagolik.domain.model.FormKey
-import io.github.eleasarb.glagolik.domain.model.FormRef
+import io.github.eleasarb.glagolik.domain.model.CardKey
+import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.ScheduledCard
 import io.github.eleasarb.glagolik.domain.srs.CardState
 import io.github.eleasarb.glagolik.domain.srs.FsrsScheduler
@@ -16,27 +16,28 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+/** Rows with an unknown `item` (none are written, see Exercise.fromId) are skipped. */
 class OfflineProgressRepository @Inject constructor(
     private val dao: ProgressDao,
     private val scheduler: FsrsScheduler,
 ) : ProgressRepository {
-    override suspend fun getCard(ref: FormRef): SrsCard? =
-        dao.getCard(ref.verbId, ref.form.name)?.toSrsCard()
+    override suspend fun getCard(key: CardKey): SrsCard? =
+        dao.getCard(key.verbId, key.exercise.id)?.toSrsCard()
 
     override suspend fun recordReview(
-        ref: FormRef,
+        key: CardKey,
         rating: Rating,
         at: Instant,
         duration: Duration?,
     ): SrsCard {
-        val stored = dao.getCard(ref.verbId, ref.form.name)
+        val stored = dao.getCard(key.verbId, key.exercise.id)
         val current = stored?.toSrsCard() ?: SrsCard(due = at)
         val reviewed = scheduler.review(current, rating, at)
         dao.saveReview(
-            card = reviewed.toEntity(ref, introducedAt = stored?.introducedAt ?: at.toEpochMilli()),
+            card = reviewed.toEntity(key, introducedAt = stored?.introducedAt ?: at.toEpochMilli()),
             log = ReviewLogEntity(
-                verbId = ref.verbId,
-                form = ref.form.name,
+                verbId = key.verbId,
+                item = key.exercise.id,
                 rating = rating.name,
                 reviewedAt = at.toEpochMilli(),
                 durationMs = duration?.toMillis(),
@@ -46,24 +47,28 @@ class OfflineProgressRepository @Inject constructor(
     }
 
     override suspend fun getDueCards(now: Instant, limit: Int): List<ScheduledCard> =
-        dao.getDueCards(now.toEpochMilli(), limit).map { ScheduledCard(it.ref(), it.toSrsCard()) }
+        dao.getDueCards(now.toEpochMilli(), limit).mapNotNull { row ->
+            row.key()?.let { ScheduledCard(it, row.toSrsCard()) }
+        }
 
-    override suspend fun getKnownForms(): Set<FormRef> =
-        dao.getAllCards().mapTo(mutableSetOf()) { it.ref() }
+    override suspend fun getKnownCards(): Set<CardKey> =
+        dao.getAllCards().mapNotNullTo(mutableSetOf()) { it.key() }
 
     override suspend fun countIntroducedSince(since: Instant): Int =
         dao.countIntroducedSince(since.toEpochMilli())
 
-    override fun observeCards(): Flow<Map<FormRef, SrsCard>> =
-        dao.observeAllCards().map { rows -> rows.associate { it.ref() to it.toSrsCard() } }
+    override fun observeCards(): Flow<Map<CardKey, SrsCard>> = dao.observeAllCards().map { rows ->
+        rows.mapNotNull { row -> row.key()?.let { it to row.toSrsCard() } }.toMap()
+    }
 
-    override fun observeCards(verbId: Int): Flow<Map<FormKey, SrsCard>> =
+    override fun observeCards(verbId: Int): Flow<Map<Exercise, SrsCard>> =
         dao.observeCards(verbId).map { rows ->
-            rows.associate { FormKey.valueOf(it.form) to it.toSrsCard() }
+            rows.mapNotNull { row -> Exercise.fromId(row.item)?.let { it to row.toSrsCard() } }
+                .toMap()
         }
 }
 
-private fun CardEntity.ref(): FormRef = FormRef(verbId, FormKey.valueOf(form))
+private fun CardEntity.key(): CardKey? = Exercise.fromId(item)?.let { CardKey(verbId, it) }
 
 internal fun CardEntity.toSrsCard(): SrsCard = SrsCard(
     due = Instant.ofEpochMilli(dueAt),
@@ -74,9 +79,9 @@ internal fun CardEntity.toSrsCard(): SrsCard = SrsCard(
     lastReview = lastReviewAt?.let(Instant::ofEpochMilli),
 )
 
-internal fun SrsCard.toEntity(ref: FormRef, introducedAt: Long): CardEntity = CardEntity(
-    verbId = ref.verbId,
-    form = ref.form.name,
+internal fun SrsCard.toEntity(key: CardKey, introducedAt: Long): CardEntity = CardEntity(
+    verbId = key.verbId,
+    item = key.exercise.id,
     state = state.name,
     step = step,
     stability = stability,

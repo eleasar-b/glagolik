@@ -9,6 +9,7 @@ import io.github.eleasarb.glagolik.data.repository.ProgressRepository
 import io.github.eleasarb.glagolik.data.repository.VerbRepository
 import io.github.eleasarb.glagolik.data.tts.Speaker
 import io.github.eleasarb.glagolik.data.tts.SpeechAvailability
+import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.model.MasteryLevel
@@ -62,7 +63,7 @@ class VerbDetailViewModel @Inject constructor(
                 verb = verb,
                 mastery = verb.forms
                     .filter { it.isTrainable }
-                    .associate { it.key to cards[it.key].masteryLevel() },
+                    .associate { it.key to cards[Exercise.Form(it.key)].masteryLevel() },
                 canSpeak = availability == SpeechAvailability.READY,
             )
         }

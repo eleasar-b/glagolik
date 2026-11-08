@@ -1,13 +1,13 @@
 package io.github.eleasarb.glagolik.ui.verbs
 
 import io.github.eleasarb.glagolik.domain.model.FormKey
-import io.github.eleasarb.glagolik.domain.model.FormRef
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.domain.usecase.ObserveMasteryUseCase
 import io.github.eleasarb.glagolik.testing.FakeProgressRepository
 import io.github.eleasarb.glagolik.testing.FakeVerbRepository
 import io.github.eleasarb.glagolik.testing.MainDispatcherRule
+import io.github.eleasarb.glagolik.testing.formKey
 import io.github.eleasarb.glagolik.testing.trainableForm
 import io.github.eleasarb.glagolik.testing.verbSummary
 import java.time.Clock
@@ -102,7 +102,7 @@ class VerbListViewModelTest {
         val viewModel = viewModel()
         verbListViewModelCollected(viewModel)
 
-        progress.recordReview(FormRef(2, FormKey.PAST_M), Rating.GOOD, NOW)
+        progress.recordReview(formKey(2, FormKey.PAST_M), Rating.GOOD, NOW)
 
         val mastery = viewModel.uiState.value.mastery
         assertEquals(MasteryCounts(new = 1, learning = 1), mastery?.byVerb?.get(2))

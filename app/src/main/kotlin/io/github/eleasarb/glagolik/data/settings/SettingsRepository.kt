@@ -18,13 +18,15 @@ interface SettingsRepository {
 
     suspend fun current(): TrainingSettings = settings.first()
 
-    suspend fun setNewFormsPerDay(value: Int)
+    suspend fun setNewCardsPerDay(value: Int)
 
     suspend fun setSessionSize(value: Int)
 
     suspend fun setStrictYo(value: Boolean)
 
     suspend fun setAutoPlayAudio(value: Boolean)
+
+    suspend fun setPracticeMeaning(value: Boolean)
 
     /** Ignored if [tenses] is empty: at least one tense must stay selected. */
     suspend fun setTenses(tenses: Set<Tense>)
@@ -39,8 +41,8 @@ class DataStoreSettingsRepository @Inject constructor(
 ) : SettingsRepository {
     override val settings: Flow<TrainingSettings> = dataStore.data.map { it.toSettings() }
 
-    override suspend fun setNewFormsPerDay(value: Int) {
-        dataStore.edit { it[NEW_FORMS_PER_DAY] = value.coerceIn(TrainingSettings.NEW_FORMS_RANGE) }
+    override suspend fun setNewCardsPerDay(value: Int) {
+        dataStore.edit { it[NEW_CARDS_PER_DAY] = value.coerceIn(TrainingSettings.NEW_CARDS_RANGE) }
     }
 
     override suspend fun setSessionSize(value: Int) {
@@ -55,6 +57,10 @@ class DataStoreSettingsRepository @Inject constructor(
         dataStore.edit { it[AUTO_PLAY_AUDIO] = value }
     }
 
+    override suspend fun setPracticeMeaning(value: Boolean) {
+        dataStore.edit { it[PRACTICE_MEANING] = value }
+    }
+
     override suspend fun setTenses(tenses: Set<Tense>) {
         if (tenses.isEmpty()) return
         dataStore.edit { prefs -> prefs[TENSES] = tenses.mapTo(mutableSetOf()) { it.name } }
@@ -62,11 +68,12 @@ class DataStoreSettingsRepository @Inject constructor(
 
     override suspend fun replaceAll(settings: TrainingSettings) {
         dataStore.edit { prefs ->
-            prefs[NEW_FORMS_PER_DAY] =
-                settings.newFormsPerDay.coerceIn(TrainingSettings.NEW_FORMS_RANGE)
+            prefs[NEW_CARDS_PER_DAY] =
+                settings.newCardsPerDay.coerceIn(TrainingSettings.NEW_CARDS_RANGE)
             prefs[SESSION_SIZE] = settings.sessionSize.coerceIn(TrainingSettings.SESSION_SIZE_RANGE)
             prefs[STRICT_YO] = settings.strictYo
             prefs[AUTO_PLAY_AUDIO] = settings.autoPlayAudio
+            prefs[PRACTICE_MEANING] = settings.practiceMeaning
             if (settings.tenses.isNotEmpty()) {
                 prefs[TENSES] = settings.tenses.mapTo(mutableSetOf()) { it.name }
             }
@@ -80,21 +87,24 @@ class DataStoreSettingsRepository @Inject constructor(
             ?.toSet()
             ?.takeIf { it.isNotEmpty() }
         return TrainingSettings(
-            newFormsPerDay = this[NEW_FORMS_PER_DAY] ?: defaults.newFormsPerDay,
+            newCardsPerDay = this[NEW_CARDS_PER_DAY] ?: defaults.newCardsPerDay,
             sessionSize = this[SESSION_SIZE] ?: defaults.sessionSize,
             strictYo = this[STRICT_YO] ?: defaults.strictYo,
             tenses = tenses ?: defaults.tenses,
             autoPlayAudio = this[AUTO_PLAY_AUDIO] ?: defaults.autoPlayAudio,
+            practiceMeaning = this[PRACTICE_MEANING] ?: defaults.practiceMeaning,
         )
     }
 
     companion object {
         const val FILE_NAME = "settings"
 
-        private val NEW_FORMS_PER_DAY = intPreferencesKey("new_forms_per_day")
+        /** Key from the time the limit covered forms only; kept so the value stays. */
+        private val NEW_CARDS_PER_DAY = intPreferencesKey("new_forms_per_day")
         private val SESSION_SIZE = intPreferencesKey("session_size")
         private val STRICT_YO = booleanPreferencesKey("strict_yo")
         private val TENSES = stringSetPreferencesKey("tenses")
         private val AUTO_PLAY_AUDIO = booleanPreferencesKey("auto_play_audio")
+        private val PRACTICE_MEANING = booleanPreferencesKey("practice_meaning")
     }
 }

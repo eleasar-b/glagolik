@@ -47,10 +47,10 @@ class SettingsViewModelTest {
     fun `settings changes are passed to the repository`() = runTest {
         val vm = viewModel()
         collect(vm)
-        vm.onNewFormsPerDayChange(20)
+        vm.onNewCardsPerDayChange(20)
         vm.onTenseToggle(Tense.PRESENT)
 
-        assertEquals(20, vm.uiState.value.settings.newFormsPerDay)
+        assertEquals(20, vm.uiState.value.settings.newCardsPerDay)
         assertEquals(Tense.entries.toSet() - Tense.PRESENT, vm.uiState.value.settings.tenses)
     }
 

@@ -12,8 +12,10 @@ import io.github.eleasarb.glagolik.data.tts.SpeechAvailability
 import io.github.eleasarb.glagolik.domain.checking.AnswerChecker
 import io.github.eleasarb.glagolik.domain.checking.AnswerResult
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
+import io.github.eleasarb.glagolik.domain.model.TrainableForm
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.domain.usecase.BuildSessionUseCase
+import io.github.eleasarb.glagolik.domain.usecase.ConjugationTask
 import io.github.eleasarb.glagolik.domain.usecase.SessionCard
 import java.time.Clock
 import java.time.Duration
@@ -106,8 +108,10 @@ class TrainingViewModel @Inject constructor(
             checker = AnswerChecker(strictYo = current.strictYo)
             autoPlayAudio = current.autoPlayAudio
             val session = buildSession()
-            queue.addAll(session.cards)
-            sessionCards = session.cards.size
+            // Meaning cards get their screens in the next step; until then only forms.
+            val cards = session.cards.filter { it.task is ConjugationTask }
+            queue.addAll(cards)
+            sessionCards = cards.size
             if (queue.isEmpty()) {
                 _uiState.value = TrainingUiState.NothingToDo
             } else {
@@ -150,9 +154,9 @@ class TrainingViewModel @Inject constructor(
     }
 
     private fun showTense(state: TrainingUiState.Question) {
-        val ref = state.card.form.ref
+        val form = state.card.form
         viewModelScope.launch {
-            val forms = verbs.getVerbDetail(ref.verbId)?.formsOf(ref.form.tense).orEmpty()
+            val forms = verbs.getVerbDetail(form.verb.id)?.formsOf(form.form.tense).orEmpty()
             _uiState.update { current ->
                 // The learner may have moved on while the forms were loading.
                 if (current is TrainingUiState.Question && current.position == state.position) {
@@ -182,7 +186,7 @@ class TrainingViewModel @Inject constructor(
         }
         val duration = answerDuration
         viewModelScope.launch {
-            progress.recordReview(card.form.ref, rating, clock.instant(), duration)
+            progress.recordReview(card.task.key, rating, clock.instant(), duration)
         }
         if (queue.isEmpty()) {
             _uiState.value = TrainingUiState.Finished(sessionCards, correctFirstTry)
@@ -203,3 +207,6 @@ class TrainingViewModel @Inject constructor(
         )
     }
 }
+
+/** The form of a conjugation card; sessions contain only those for now (see init). */
+internal val SessionCard.form: TrainableForm get() = (task as ConjugationTask).form

@@ -95,4 +95,40 @@ class AnswerCheckerTest {
         assertEquals(AnswerResult.Empty, checker.check("   ", listOf("зна́ю")))
         assertEquals(AnswerResult.Empty, checker.check("'", listOf("зна́ю")))
     }
+
+    @Test
+    fun `another fitting answer is reported, not graded`() {
+        assertEquals(
+            AnswerResult.OtherAnswer("сообщи́ть"),
+            checker.check("сообщить", listOf("сказа́ть"), alsoFitting = listOf("сообщи́ть")),
+        )
+    }
+
+    @Test
+    fun `the expected answer wins over an also fitting one`() {
+        assertEquals(
+            AnswerResult.Correct("сказа́ть"),
+            checker.check("сказать", listOf("сказа́ть"), alsoFitting = listOf("сказа́ть")),
+        )
+    }
+
+    @Test
+    fun `also fitting answers do not hide a wrong answer`() {
+        assertEquals(
+            AnswerResult.Incorrect(listOf("сказа́ть")),
+            checker.check("говорить", listOf("сказа́ть"), alsoFitting = listOf("сообщи́ть")),
+        )
+    }
+
+    @Test
+    fun `also fitting answers accept ye for yo like expected ones`() {
+        assertEquals(
+            AnswerResult.OtherAnswer("пройти́"),
+            checker.check("пройти", listOf("идти́"), alsoFitting = listOf("пройти́")),
+        )
+        assertEquals(
+            AnswerResult.OtherAnswer("ждёшь"),
+            checker.check("ждешь", listOf("подождёшь"), alsoFitting = listOf("ждёшь")),
+        )
+    }
 }

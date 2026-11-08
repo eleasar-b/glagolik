@@ -72,4 +72,14 @@ class OfflineVerbRepositoryTest {
     fun `unknown id gives null`() = runTest {
         assertNull(repository.getVerbDetail(999))
     }
+
+    @Test
+    fun `core verbs come in frequency order with partners in both directions`() = runTest {
+        val core = repository.getCoreVerbs()
+
+        assertEquals(listOf(1, 2), core.map { it.summary.id })
+        assertEquals(setOf(3), core[1].partnerIds)
+        assertEquals("heben", core[1].summary.translation.german)
+        assertEquals(emptySet<Int>(), core[0].partnerIds)
+    }
 }

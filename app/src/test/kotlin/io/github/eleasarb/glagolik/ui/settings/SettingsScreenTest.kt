@@ -36,8 +36,8 @@ class SettingsScreenTest {
         var newForms: Int? = null
         var sessionSize: Int? = null
         show(
-            TrainingSettings(newFormsPerDay = 10, sessionSize = 20),
-            onNewFormsPerDayChange = { newForms = it },
+            TrainingSettings(newCardsPerDay = 10, sessionSize = 20),
+            onNewCardsPerDayChange = { newForms = it },
             onSessionSizeChange = { sessionSize = it },
         )
 
@@ -56,7 +56,7 @@ class SettingsScreenTest {
 
     @Test
     fun `decrease is disabled at the lower bound`() {
-        show(TrainingSettings(newFormsPerDay = 0))
+        show(TrainingSettings(newCardsPerDay = 0))
 
         compose.onNodeWithContentDescription(
             label(R.string.settings_decrease, R.string.settings_new_forms),
@@ -205,7 +205,7 @@ class SettingsScreenTest {
 
     private fun show(
         settings: TrainingSettings,
-        onNewFormsPerDayChange: (Int) -> Unit = {},
+        onNewCardsPerDayChange: (Int) -> Unit = {},
         onSessionSizeChange: (Int) -> Unit = {},
         onStrictYoChange: (Boolean) -> Unit = {},
         onAutoPlayAudioChange: (Boolean) -> Unit = {},
@@ -222,7 +222,7 @@ class SettingsScreenTest {
             GlagolikTheme(dynamicColor = false) {
                 SettingsScreen(
                     uiState = SettingsUiState(settings, backupStatus, speech),
-                    onNewFormsPerDayChange = onNewFormsPerDayChange,
+                    onNewCardsPerDayChange = onNewCardsPerDayChange,
                     onSessionSizeChange = onSessionSizeChange,
                     onStrictYoChange = onStrictYoChange,
                     onAutoPlayAudioChange = onAutoPlayAudioChange,

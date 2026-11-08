@@ -4,12 +4,14 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import io.github.eleasarb.glagolik.data.db.ProgressDatabase
+import io.github.eleasarb.glagolik.domain.model.CardKey
+import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.FormKey
-import io.github.eleasarb.glagolik.domain.model.FormRef
 import io.github.eleasarb.glagolik.domain.srs.CardState
 import io.github.eleasarb.glagolik.domain.srs.FsrsScheduler
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.domain.srs.SrsCard
+import io.github.eleasarb.glagolik.testing.formKey
 import java.time.Duration
 import java.time.Instant
 import kotlinx.coroutines.flow.first
@@ -29,8 +31,8 @@ class OfflineProgressRepositoryTest {
     private lateinit var repository: OfflineProgressRepository
 
     private val scheduler = FsrsScheduler(fuzz = null)
-    private val skazatFuture = FormRef(verbId = 2, form = FormKey.FUTURE_SG1)
-    private val skazatPast = FormRef(verbId = 2, form = FormKey.PAST_M)
+    private val skazatFuture = formKey(2, FormKey.FUTURE_SG1)
+    private val skazatPast = formKey(2, FormKey.PAST_M)
 
     @Before
     fun setUp() {
@@ -90,7 +92,7 @@ class OfflineProgressRepositoryTest {
         repository.recordReview(skazatPast, Rating.AGAIN, NOW)
 
         val due = repository.getDueCards(NOW + TEN_MINUTES, limit = 10)
-        assertEquals(listOf(skazatPast, skazatFuture), due.map { it.ref })
+        assertEquals(listOf(skazatPast, skazatFuture), due.map { it.key })
         assertEquals(1, repository.getDueCards(NOW + TEN_MINUTES, limit = 1).size)
         assertEquals(emptyList<Any>(), repository.getDueCards(NOW, limit = 10))
     }
@@ -104,22 +106,25 @@ class OfflineProgressRepositoryTest {
 
         assertEquals(1, repository.countIntroducedSince(tomorrow))
         assertEquals(2, repository.countIntroducedSince(NOW))
-        assertEquals(setOf(skazatFuture, skazatPast), repository.getKnownForms())
+        assertEquals(setOf(skazatFuture, skazatPast), repository.getKnownCards())
     }
 
     @Test
     fun `observed cards reflect every stored review`() = runTest {
-        assertEquals(emptyMap<FormRef, SrsCard>(), repository.observeCards().first())
+        assertEquals(emptyMap<CardKey, SrsCard>(), repository.observeCards().first())
 
         val future = repository.recordReview(skazatFuture, Rating.GOOD, NOW)
         val past = repository.recordReview(skazatPast, Rating.AGAIN, NOW)
-        val other = FormRef(verbId = 3, form = FormKey.PAST_M)
+        val other = formKey(3, FormKey.PAST_M)
         repository.recordReview(other, Rating.GOOD, NOW)
 
         assertEquals(future, repository.observeCards().first()[skazatFuture])
         assertEquals(3, repository.observeCards().first().size)
         assertEquals(
-            mapOf(FormKey.FUTURE_SG1 to future, FormKey.PAST_M to past),
+            mapOf(
+                Exercise.Form(FormKey.FUTURE_SG1) to future,
+                Exercise.Form(FormKey.PAST_M) to past,
+            ),
             repository.observeCards(verbId = 2).first(),
         )
     }
