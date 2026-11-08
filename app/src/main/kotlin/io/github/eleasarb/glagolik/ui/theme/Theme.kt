@@ -16,20 +16,14 @@ private val BurgundyLight = Color(0xFFFFB3B6)
 private val Slate = Color(0xFF3F4A5A)
 private val SlateLight = Color(0xFFBCC7DB)
 
-/** Accent for new and learning forms, clearly apart from burgundy. */
-private val Amber = Color(0xFF8A5100)
-private val AmberLight = Color(0xFFFFB870)
-
 private val LightColors = lightColorScheme(
     primary = Burgundy,
     secondary = Slate,
-    tertiary = Amber,
 )
 
 private val DarkColors = darkColorScheme(
     primary = BurgundyLight,
     secondary = SlateLight,
-    tertiary = AmberLight,
 )
 
 @Composable
