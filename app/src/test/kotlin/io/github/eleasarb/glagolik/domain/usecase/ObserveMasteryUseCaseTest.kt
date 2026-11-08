@@ -1,11 +1,11 @@
 package io.github.eleasarb.glagolik.domain.usecase
 
 import io.github.eleasarb.glagolik.domain.model.FormKey
-import io.github.eleasarb.glagolik.domain.model.FormRef
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.testing.FakeProgressRepository
 import io.github.eleasarb.glagolik.testing.FakeVerbRepository
+import io.github.eleasarb.glagolik.testing.formKey
 import io.github.eleasarb.glagolik.testing.trainableForm
 import java.time.Clock
 import java.time.Duration
@@ -53,8 +53,8 @@ class ObserveMasteryUseCaseTest {
 
     @Test
     fun `answered forms are counted per verb and in total`() = runTest {
-        val learning = FormRef(2, FormKey.FUTURE_SG1)
-        val young = FormRef(2, FormKey.PAST_M)
+        val learning = formKey(2, FormKey.FUTURE_SG1)
+        val young = formKey(2, FormKey.PAST_M)
         progress.recordReview(learning, Rating.AGAIN, NOW)
         progress.recordReview(young, Rating.EASY, NOW)
 
@@ -67,7 +67,7 @@ class ObserveMasteryUseCaseTest {
 
     @Test
     fun `due forms are counted at the current time`() = runTest {
-        progress.recordReview(FormRef(1, FormKey.PAST_M), Rating.AGAIN, NOW)
+        progress.recordReview(formKey(1, FormKey.PAST_M), Rating.AGAIN, NOW)
 
         assertEquals(0, useCase(now = NOW)().first().dueNow)
         assertEquals(1, useCase(now = NOW + Duration.ofMinutes(1))().first().dueNow)
@@ -75,8 +75,8 @@ class ObserveMasteryUseCaseTest {
 
     @Test
     fun `cards of forms that are not trainable are ignored`() = runTest {
-        progress.recordReview(FormRef(1, FormKey.PRESENT_SG1), Rating.AGAIN, NOW)
-        progress.recordReview(FormRef(99, FormKey.PAST_M), Rating.AGAIN, NOW)
+        progress.recordReview(formKey(1, FormKey.PRESENT_SG1), Rating.AGAIN, NOW)
+        progress.recordReview(formKey(99, FormKey.PAST_M), Rating.AGAIN, NOW)
 
         val overview = useCase(now = NOW + Duration.ofDays(1))().first()
 
@@ -93,7 +93,7 @@ class ObserveMasteryUseCaseTest {
             useCase()().collect { totals += it.total }
         }
 
-        progress.recordReview(FormRef(1, FormKey.PAST_M), Rating.GOOD, NOW)
+        progress.recordReview(formKey(1, FormKey.PAST_M), Rating.GOOD, NOW)
 
         assertEquals(listOf(MasteryCounts(new = 5), MasteryCounts(new = 4, learning = 1)), totals)
     }
@@ -101,8 +101,8 @@ class ObserveMasteryUseCaseTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `due count rises when a card becomes due without a new answer`() = runTest {
-        progress.recordReview(FormRef(1, FormKey.PAST_M), Rating.AGAIN, NOW)
-        progress.recordReview(FormRef(2, FormKey.PAST_M), Rating.GOOD, NOW)
+        progress.recordReview(formKey(1, FormKey.PAST_M), Rating.AGAIN, NOW)
+        progress.recordReview(formKey(2, FormKey.PAST_M), Rating.GOOD, NOW)
         val due = mutableListOf<Int>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             useCase(clock = SchedulerClock(testScheduler, NOW))().collect { due += it.dueNow }

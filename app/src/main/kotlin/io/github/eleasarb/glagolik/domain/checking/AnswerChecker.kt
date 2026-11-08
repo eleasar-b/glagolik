@@ -26,6 +26,12 @@ sealed interface AnswerResult {
     data class Incorrect(val expected: List<String>, val yoTypedAsYe: Boolean = false) :
         AnswerResult
 
+    /**
+     * Input is another valid answer, but not the one asked for (e.g. a verb with the same
+     * meaning and aspect). [matched] is that answer, with stress. Not graded.
+     */
+    data class OtherAnswer(val matched: String) : AnswerResult
+
     /** Input contains Latin letters (e.g. a Latin "a" for Cyrillic "а"). Not graded. */
     data class LatinLetters(val letters: List<Char>) : AnswerResult
 
@@ -40,18 +46,38 @@ sealed interface AnswerResult {
  * - stress marks are ignored on both sides (U+0301, U+0300, apostrophe)
  * - е typed for ё counts as correct with a hint, or as wrong if [strictYo] is set
  * - Latin letters are reported instead of being graded as wrong
+ * - a wrong input that matches one of [check]'s `alsoFitting` answers (same rules) is reported
+ *   as [AnswerResult.OtherAnswer] instead of being graded as wrong
  */
 class AnswerChecker(private val strictYo: Boolean = false) {
-    fun check(input: String, expected: List<String>): AnswerResult {
+    fun check(
+        input: String,
+        expected: List<String>,
+        alsoFitting: List<String> = emptyList(),
+    ): AnswerResult {
         require(expected.isNotEmpty()) { "expected must not be empty" }
         val typed = normalize(input)
         val latin = LATIN.findAll(typed).map { it.value.single() }.distinct().toList()
         return when {
             typed.isEmpty() -> AnswerResult.Empty
+
             latin.isNotEmpty() -> AnswerResult.LatinLetters(latin)
-            else -> grade(typed, expected)
+
+            else -> grade(typed, expected).let { result ->
+                if (result is AnswerResult.Incorrect && !result.yoTypedAsYe) {
+                    otherAnswer(typed, alsoFitting) ?: result
+                } else {
+                    result
+                }
+            }
         }
     }
+
+    private fun otherAnswer(typed: String, alsoFitting: List<String>): AnswerResult? =
+        alsoFitting.firstNotNullOfOrNull { answer ->
+            (grade(typed, listOf(answer)) as? AnswerResult.Correct)
+                ?.let { AnswerResult.OtherAnswer(it.matched) }
+        }
 
     private fun grade(typed: String, expected: List<String>): AnswerResult {
         expected.firstOrNull { normalize(it) == typed }?.let { return AnswerResult.Correct(it) }

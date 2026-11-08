@@ -2,7 +2,7 @@ package io.github.eleasarb.glagolik.domain.usecase
 
 import io.github.eleasarb.glagolik.data.repository.ProgressRepository
 import io.github.eleasarb.glagolik.data.repository.VerbRepository
-import io.github.eleasarb.glagolik.domain.model.FormRef
+import io.github.eleasarb.glagolik.domain.model.CardKey
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.model.MasteryOverview
 import io.github.eleasarb.glagolik.domain.model.masteryLevel
@@ -34,7 +34,7 @@ class ObserveMasteryUseCase @Inject constructor(
 ) {
     @OptIn(ExperimentalCoroutinesApi::class)
     operator fun invoke(): Flow<MasteryOverview> {
-        val trainable = flow { emit(verbs.getTrainableForms().map { it.ref }) }
+        val trainable = flow { emit(verbs.getTrainableForms().map { it.key }) }
         return combine(trainable, progress.observeCards(), ::Snapshot)
             .transformLatest { (refs, cards) ->
                 val dues = refs.mapNotNull { cards[it]?.due }
@@ -48,12 +48,12 @@ class ObserveMasteryUseCase @Inject constructor(
             }
     }
 
-    private data class Snapshot(val refs: List<FormRef>, val cards: Map<FormRef, SrsCard>)
+    private data class Snapshot(val refs: List<CardKey>, val cards: Map<CardKey, SrsCard>)
 }
 
 internal fun overview(
-    refs: List<FormRef>,
-    cards: Map<FormRef, SrsCard>,
+    refs: List<CardKey>,
+    cards: Map<CardKey, SrsCard>,
     now: Instant,
 ): MasteryOverview {
     val byVerb = refs.groupBy { it.verbId }.mapValues { (_, verbRefs) ->

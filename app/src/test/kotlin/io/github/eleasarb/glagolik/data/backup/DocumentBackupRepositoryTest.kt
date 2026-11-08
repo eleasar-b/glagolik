@@ -7,12 +7,12 @@ import androidx.test.core.app.ApplicationProvider
 import io.github.eleasarb.glagolik.data.db.ProgressDatabase
 import io.github.eleasarb.glagolik.data.repository.OfflineProgressRepository
 import io.github.eleasarb.glagolik.domain.model.FormKey
-import io.github.eleasarb.glagolik.domain.model.FormRef
 import io.github.eleasarb.glagolik.domain.model.Tense
 import io.github.eleasarb.glagolik.domain.model.TrainingSettings
 import io.github.eleasarb.glagolik.domain.srs.FsrsScheduler
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.testing.FakeSettingsRepository
+import io.github.eleasarb.glagolik.testing.formKey
 import java.io.File
 import java.time.Clock
 import java.time.Duration
@@ -60,7 +60,7 @@ class DocumentBackupRepositoryTest {
         progress.recordReview(SKAZAT, Rating.GOOD, NOW + Duration.ofMinutes(1))
         progress.recordReview(BYT, Rating.EASY, NOW)
         val settings =
-            TrainingSettings(newFormsPerDay = 30, strictYo = true, tenses = setOf(Tense.PAST))
+            TrainingSettings(newCardsPerDay = 30, strictYo = true, tenses = setOf(Tense.PAST))
         val file = Uri.fromFile(File(temp.root, "export.json"))
 
         val exported = repository(source, FakeSettingsRepository(settings)).export(file)
@@ -93,7 +93,7 @@ class DocumentBackupRepositoryTest {
         repository(source).export(file)
         repository(target).import(file)
 
-        assertEquals(setOf(SKAZAT), targetProgress.getKnownForms())
+        assertEquals(setOf(SKAZAT), targetProgress.getKnownCards())
     }
 
     @Test
@@ -110,7 +110,7 @@ class DocumentBackupRepositoryTest {
             }
         }
 
-        assertEquals(setOf(BYT), targetProgress.getKnownForms())
+        assertEquals(setOf(BYT), targetProgress.getKnownCards())
         assertEquals(40, settings.current().sessionSize)
     }
 
@@ -141,7 +141,7 @@ class DocumentBackupRepositoryTest {
 
     private companion object {
         val NOW: Instant = Instant.parse("2026-01-10T07:00:00Z")
-        val SKAZAT = FormRef(2, FormKey.FUTURE_SG1)
-        val BYT = FormRef(1, FormKey.PAST_M)
+        val SKAZAT = formKey(2, FormKey.FUTURE_SG1)
+        val BYT = formKey(1, FormKey.PAST_M)
     }
 }

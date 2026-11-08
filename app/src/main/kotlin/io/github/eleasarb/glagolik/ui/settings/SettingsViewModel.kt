@@ -73,8 +73,8 @@ class SettingsViewModel @Inject constructor(
     /** Suggested name for the export, e.g. `glagolik-progress-2026-11-05.json`. */
     fun exportFileName(): String = "glagolik-progress-${LocalDate.now(clock)}.json"
 
-    fun onNewFormsPerDayChange(value: Int) {
-        viewModelScope.launch { repository.setNewFormsPerDay(value) }
+    fun onNewCardsPerDayChange(value: Int) {
+        viewModelScope.launch { repository.setNewCardsPerDay(value) }
     }
 
     fun onSessionSizeChange(value: Int) {

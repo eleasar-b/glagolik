@@ -1,5 +1,6 @@
 package io.github.eleasarb.glagolik.data.repository
 
+import io.github.eleasarb.glagolik.domain.model.CoreVerb
 import io.github.eleasarb.glagolik.domain.model.TrainableForm
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
 import io.github.eleasarb.glagolik.domain.model.VerbSummary
@@ -17,4 +18,7 @@ interface VerbRepository {
      * order (FormKey). Forms marked NO_TRAINING are not included.
      */
     suspend fun getTrainableForms(): List<TrainableForm>
+
+    /** Core verbs in frequency order, with their aspect partners (core or not). */
+    suspend fun getCoreVerbs(): List<CoreVerb>
 }

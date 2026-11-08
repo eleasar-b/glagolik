@@ -116,24 +116,44 @@ io/github/eleasarb/glagolik/
 
 ## 6. Lernlogik
 
-- **Lerneinheit:** Spaced Repetition mit FSRS-6 auf Ebene der **einzelnen Verbform**,
+- **Lerneinheit:** Spaced Repetition mit FSRS-6 auf Ebene der **Karte** = Verb + Übung,
   nicht des Verbs. Eigene Portierung von py-fsrs 6.3.2 (MIT) in `domain/srs`, geprüft
   gegen Referenzwerte aus py-fsrs (`src/test/resources/srs`). Standardparameter,
   Zielretention 0.9, Lernschritte 1 min / 10 min, Wiederlernschritt 10 min.
-- **Fortschritt:** eigene Datenbank `progress.db` (Tabellen `card`, `review_log`),
-  getrennt von `verbs.db`. Nie destruktiv: jede Schema-Änderung braucht eine Migration.
+- **Übungsarten** (`Exercise`, Schlüssel `CardKey` = Verb-ID + Übung):
+  - **Form:** eine Verbform tippen (eine Karte pro `FormKey`).
+  - **Bedeutung RU→DE** (`MEANING_RU_DE`): Infinitiv gezeigt, Multiple Choice mit 4 Optionen
+    (je die ersten 2–3 Bedeutungen). Ablenker: 3 andere Kernverben, nie der Aspektpartner,
+    nie ein Verb mit einer gemeinsamen Bedeutung (Deutsch oder Englisch).
+  - **Bedeutung DE→RU** (`MEANING_DE_RU`): Übersetzung + Aspekt gezeigt, Infinitiv tippen.
+    Ein anderes Kernverb mit gleichem Aspekt und gemeinsamer Bedeutung ist kein Fehler,
+    sondern gibt einen Hinweis und einen neuen Versuch.
+  - Bedeutungen = Teile der Übersetzung, getrennt durch Komma oder Semikolon (ausserhalb
+    von Klammern).
+- **Fortschritt:** eigene Datenbank `progress.db` (Tabellen `card`, `review_log`, Version 2),
+  getrennt von `verbs.db`. Die Spalte `item` hält die Übungs-ID (`Exercise.id`: der
+  `FormKey`-Name oder z. B. `MEANING_RU_DE`); IDs ändern sich nach einem Release nie.
+  Nie destruktiv: jede Schema-Änderung braucht eine Migration und einen Migrationstest
+  (`ProgressDatabaseMigrationTest`, erzeugt die alte Version aus `app/schemas`).
 - **Bewertung:** falsch = Again, richtig = Good, nach richtiger Antwort optional „leicht“ = Easy.
-- **Defaults:** 10 neue Formen pro Tag, 20 Karten pro Session (einstellbar, DataStore).
-- **Session:** fällige Formen zuerst (am stärksten überfällig zuerst), dann neue Formen in
-  Frequenzreihenfolge der Verben, innerhalb der Session gemischt. Der Tag beginnt um
-  Mitternacht Ortszeit. Falsch beantwortete Karten kommen am Ende der Session erneut.
+  Gilt für alle Übungsarten.
+- **Defaults:** 10 neue Karten pro Tag (ein gemeinsames Limit für alle Übungsarten),
+  20 Karten pro Session, „Bedeutung üben“ an (einstellbar, DataStore).
+- **Session:** fällige Karten zuerst (am stärksten überfällig zuerst), dann neue Karten: pro
+  Verb in Frequenzreihenfolge zuerst RU→DE, dann DE→RU, dann die Formen. Alle Übungsarten
+  innerhalb der Session gemischt, RU→DE eines Verbs bleibt dabei vor seinem DE→RU. Die
+  Zeitform-Auswahl gilt nur für Formen; ist „Bedeutung üben“ aus, gibt es keine
+  Bedeutungskarten (weder fällige noch neue). Der Tag beginnt um Mitternacht Ortszeit.
+  Falsch beantwortete Karten kommen am Ende der Session erneut.
 - **Backup:** nur `progress.db` und `datastore/settings.preferences_pb` (Cloud-Backup und
   Gerätewechsel, auch Seedvault). `progress.db` läuft im Journal-Modus TRUNCATE, damit
   alles in einer Datei liegt. `verbs.db` wird nie gesichert.
-- **Export/Import:** in den Einstellungen, als JSON-Datei (`glagolik-progress`, Version 1,
+- **Export/Import:** in den Einstellungen, als JSON-Datei (`glagolik-progress`, Version 2,
   siehe `ProgressBackupCodec`) über die Dateiauswahl des Systems (Storage Access
-  Framework, keine Berechtigung). Der Import prüft die ganze Datei zuerst und ersetzt
-  dann Fortschritt und Einstellungen in einem Schritt, nach Bestätigung.
+  Framework, keine Berechtigung). Version 2 nennt die Übung im Feld `item`, Version 1 hiess
+  es `form` (nur Formen) und wird weiterhin gelesen. Neuere Versionen lehnt der Import mit
+  einer Meldung ab. Der Import prüft die ganze Datei zuerst und ersetzt dann Fortschritt und
+  Einstellungen in einem Schritt, nach Bestätigung.
 - **Sessions:** Die Sessionlänge ist frei wählbar (Anzahl Karten oder Minuten).
   Fällige Karten kommen zuerst, neue Karten sind pro Tag begrenzt.
 - **Filter:**

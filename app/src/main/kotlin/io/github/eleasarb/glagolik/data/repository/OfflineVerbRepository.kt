@@ -6,8 +6,8 @@ import io.github.eleasarb.glagolik.data.db.VerbEntity
 import io.github.eleasarb.glagolik.data.db.VerbFormEntity
 import io.github.eleasarb.glagolik.domain.model.Aspect
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
+import io.github.eleasarb.glagolik.domain.model.CoreVerb
 import io.github.eleasarb.glagolik.domain.model.FormKey
-import io.github.eleasarb.glagolik.domain.model.FormRef
 import io.github.eleasarb.glagolik.domain.model.TrainableForm
 import io.github.eleasarb.glagolik.domain.model.Translation
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
@@ -34,6 +34,15 @@ class OfflineVerbRepository @Inject constructor(private val dao: VerbDao) : Verb
 
     override suspend fun getTrainableForms(): List<TrainableForm> =
         dao.getTrainableForms().toTrainableForms()
+
+    override suspend fun getCoreVerbs(): List<CoreVerb> {
+        val partners = dao.getAllPartners()
+            .flatMap { listOf(it.verbId to it.partnerId, it.partnerId to it.verbId) }
+            .groupBy({ it.first }, { it.second })
+        return dao.getCoreVerbs().map { verb ->
+            CoreVerb(summary = verb.toSummary(), partnerIds = partners[verb.id].orEmpty().toSet())
+        }
+    }
 }
 
 /** Strips stress marks and surrounding whitespace; the bare columns carry no marks. */
@@ -61,8 +70,8 @@ internal fun List<TrainableFormRow>.toTrainableForms(): List<TrainableForm> =
             .toSortedMap()
             .map { (form, variants) ->
                 TrainableForm(
-                    ref = FormRef(verb.id, form),
                     verb = verb,
+                    form = form,
                     expected = variants.sortedBy { it.variant }.map { it.value },
                 )
             }

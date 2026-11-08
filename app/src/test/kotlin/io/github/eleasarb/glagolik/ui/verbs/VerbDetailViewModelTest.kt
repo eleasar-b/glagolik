@@ -4,7 +4,6 @@ import androidx.lifecycle.SavedStateHandle
 import io.github.eleasarb.glagolik.data.tts.SpeechAvailability
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
 import io.github.eleasarb.glagolik.domain.model.FormKey
-import io.github.eleasarb.glagolik.domain.model.FormRef
 import io.github.eleasarb.glagolik.domain.model.MasteryLevel
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
 import io.github.eleasarb.glagolik.domain.srs.Rating
@@ -12,6 +11,7 @@ import io.github.eleasarb.glagolik.testing.FakeProgressRepository
 import io.github.eleasarb.glagolik.testing.FakeSpeaker
 import io.github.eleasarb.glagolik.testing.FakeVerbRepository
 import io.github.eleasarb.glagolik.testing.MainDispatcherRule
+import io.github.eleasarb.glagolik.testing.formKey
 import io.github.eleasarb.glagolik.testing.verbSummary
 import io.github.eleasarb.glagolik.ui.navigation.VERB_ID_ARG
 import java.time.Instant
@@ -67,8 +67,8 @@ class VerbDetailViewModelTest {
         val viewModel = viewModelFor(2)
         verbDetailViewModelCollected(viewModel)
 
-        progress.recordReview(FormRef(2, FormKey.PAST_M), Rating.EASY, NOW)
-        progress.recordReview(FormRef(3, FormKey.FUTURE_SG1), Rating.EASY, NOW)
+        progress.recordReview(formKey(2, FormKey.PAST_M), Rating.EASY, NOW)
+        progress.recordReview(formKey(3, FormKey.FUTURE_SG1), Rating.EASY, NOW)
 
         val state = viewModel.uiState.value as VerbDetailUiState.Success
         assertEquals(MasteryLevel.YOUNG, state.mastery[FormKey.PAST_M])

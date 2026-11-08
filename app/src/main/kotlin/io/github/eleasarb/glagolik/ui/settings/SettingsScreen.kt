@@ -86,7 +86,7 @@ fun SettingsRoute(
 
     SettingsScreen(
         uiState = uiState,
-        onNewFormsPerDayChange = viewModel::onNewFormsPerDayChange,
+        onNewCardsPerDayChange = viewModel::onNewCardsPerDayChange,
         onSessionSizeChange = viewModel::onSessionSizeChange,
         onStrictYoChange = viewModel::onStrictYoChange,
         onAutoPlayAudioChange = viewModel::onAutoPlayAudioChange,
@@ -139,7 +139,7 @@ private fun ConfirmImportDialog(
 @Composable
 fun SettingsScreen(
     uiState: SettingsUiState,
-    onNewFormsPerDayChange: (Int) -> Unit,
+    onNewCardsPerDayChange: (Int) -> Unit,
     onSessionSizeChange: (Int) -> Unit,
     onStrictYoChange: (Boolean) -> Unit,
     onAutoPlayAudioChange: (Boolean) -> Unit,
@@ -178,7 +178,7 @@ fun SettingsScreen(
         ) {
             TrainingSettingsSection(
                 settings = uiState.settings,
-                onNewFormsPerDayChange = onNewFormsPerDayChange,
+                onNewCardsPerDayChange = onNewCardsPerDayChange,
                 onSessionSizeChange = onSessionSizeChange,
                 onStrictYoChange = onStrictYoChange,
                 onTenseToggle = onTenseToggle,
@@ -235,7 +235,7 @@ internal fun SwitchSetting(
 @Composable
 private fun TrainingSettingsSection(
     settings: TrainingSettings,
-    onNewFormsPerDayChange: (Int) -> Unit,
+    onNewCardsPerDayChange: (Int) -> Unit,
     onSessionSizeChange: (Int) -> Unit,
     onStrictYoChange: (Boolean) -> Unit,
     onTenseToggle: (Tense) -> Unit,
@@ -244,9 +244,9 @@ private fun TrainingSettingsSection(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         NumberSetting(
             label = stringResource(R.string.settings_new_forms),
-            value = settings.newFormsPerDay,
-            range = TrainingSettings.NEW_FORMS_RANGE,
-            onValueChange = onNewFormsPerDayChange,
+            value = settings.newCardsPerDay,
+            range = TrainingSettings.NEW_CARDS_RANGE,
+            onValueChange = onNewCardsPerDayChange,
         )
         NumberSetting(
             label = stringResource(R.string.settings_session_size),
@@ -394,7 +394,7 @@ private fun SettingsScreenPreview() {
                 settings = TrainingSettings(tenses = setOf(Tense.FUTURE, Tense.PAST)),
                 backupStatus = BackupStatus.Exported(BackupSummary(cards = 42, reviews = 120)),
             ),
-            onNewFormsPerDayChange = {},
+            onNewCardsPerDayChange = {},
             onSessionSizeChange = {},
             onStrictYoChange = {},
             onAutoPlayAudioChange = {},

@@ -48,10 +48,10 @@ import io.github.eleasarb.glagolik.domain.checking.AnswerResult
 import io.github.eleasarb.glagolik.domain.model.Aspect
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
 import io.github.eleasarb.glagolik.domain.model.FormKey
-import io.github.eleasarb.glagolik.domain.model.FormRef
 import io.github.eleasarb.glagolik.domain.model.TrainableForm
 import io.github.eleasarb.glagolik.domain.model.Translation
 import io.github.eleasarb.glagolik.domain.model.VerbSummary
+import io.github.eleasarb.glagolik.domain.usecase.ConjugationTask
 import io.github.eleasarb.glagolik.domain.usecase.SessionCard
 import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
 import io.github.eleasarb.glagolik.ui.verbs.labelRes
@@ -205,9 +205,9 @@ private fun QuestionContent(
             }
             if (feedback is AnswerResult.Incorrect && state.tenseForms.isNotEmpty()) {
                 TenseFormsCard(
-                    tense = state.card.form.ref.form.tense,
+                    tense = state.card.form.form.tense,
                     forms = state.tenseForms,
-                    asked = state.card.form.ref.form,
+                    asked = state.card.form.form,
                 )
             }
             Actions(state = state, onSubmit = onSubmit, onContinue = onContinue)
@@ -218,7 +218,7 @@ private fun QuestionContent(
 @Composable
 private fun Prompt(card: SessionCard, modifier: Modifier = Modifier) {
     val verb = card.form.verb
-    val form = card.form.ref.form
+    val form = card.form.form
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (card.isNew) {
             Text(
@@ -372,10 +372,12 @@ private fun Message(
 @Composable
 private fun TrainingScreenPreview() {
     val card = SessionCard(
-        form = TrainableForm(
-            ref = FormRef(2, FormKey.FUTURE_SG2),
-            verb = VerbSummary(2, "сказа́ть", Aspect.PERFECTIVE, Translation("sagen", "say")),
-            expected = listOf("ска́жешь"),
+        task = ConjugationTask(
+            TrainableForm(
+                verb = VerbSummary(2, "сказа́ть", Aspect.PERFECTIVE, Translation("sagen", "say")),
+                form = FormKey.FUTURE_SG2,
+                expected = listOf("ска́жешь"),
+            ),
         ),
         isNew = true,
     )
@@ -400,10 +402,12 @@ private fun TrainingScreenPreview() {
 @Composable
 private fun TrainingScreenIncorrectPreview() {
     val card = SessionCard(
-        form = TrainableForm(
-            ref = FormRef(2, FormKey.FUTURE_SG2),
-            verb = VerbSummary(2, "сказа́ть", Aspect.PERFECTIVE, Translation("sagen", "say")),
-            expected = listOf("ска́жешь"),
+        task = ConjugationTask(
+            TrainableForm(
+                verb = VerbSummary(2, "сказа́ть", Aspect.PERFECTIVE, Translation("sagen", "say")),
+                form = FormKey.FUTURE_SG2,
+                expected = listOf("ска́жешь"),
+            ),
         ),
         isNew = false,
     )
