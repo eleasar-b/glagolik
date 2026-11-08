@@ -3,6 +3,8 @@ package io.github.eleasarb.glagolik.ui.settings
 import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -12,6 +14,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import io.github.eleasarb.glagolik.R
 import io.github.eleasarb.glagolik.data.backup.BackupSummary
+import io.github.eleasarb.glagolik.data.tts.SpeechAvailability
 import io.github.eleasarb.glagolik.domain.model.Tense
 import io.github.eleasarb.glagolik.domain.model.TrainingSettings
 import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
@@ -71,11 +74,87 @@ class SettingsScreenTest {
             onTenseToggle = { toggled = it },
         )
 
-        compose.onNode(isToggleable()).performClick()
-        compose.onNodeWithText(context.getString(R.string.tense_past)).performClick()
+        compose.onNode(isToggleable() and hasText(context.getString(R.string.settings_strict_yo)))
+            .performClick()
+        compose.onNodeWithText(context.getString(R.string.tense_past)).performScrollTo()
+            .performClick()
 
         assertEquals(true, strict)
         assertEquals(Tense.PAST, toggled)
+    }
+
+    @Test
+    fun `auto play switch reports changes`() {
+        var autoPlay: Boolean? = null
+        show(TrainingSettings(autoPlayAudio = true), onAutoPlayAudioChange = { autoPlay = it })
+
+        compose.onNode(isToggleable() and hasText(context.getString(R.string.settings_auto_play)))
+            .performScrollTo()
+            .assertIsOn()
+            .performClick()
+
+        assertEquals(false, autoPlay)
+    }
+
+    @Test
+    fun `missing engine is explained and system settings can be opened`() {
+        var opened = false
+        show(
+            TrainingSettings(),
+            speech = SpeechAvailability.NO_ENGINE,
+            onOpenSpeechSettings = { opened = true },
+        )
+
+        compose.onNodeWithText(context.getString(R.string.settings_speech_no_engine))
+            .performScrollTo()
+            .assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.settings_speech_test))
+            .assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.settings_speech_install))
+            .assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.settings_speech_open))
+            .performScrollTo()
+            .performClick()
+
+        assertEquals(true, opened)
+    }
+
+    @Test
+    fun `voice that is not downloaded offers the download`() {
+        var install = false
+        show(
+            TrainingSettings(),
+            speech = SpeechAvailability.VOICE_NOT_INSTALLED,
+            onInstallVoice = { install = true },
+        )
+
+        compose.onNodeWithText(context.getString(R.string.settings_speech_not_installed))
+            .performScrollTo()
+            .assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.settings_speech_install))
+            .performScrollTo()
+            .performClick()
+
+        assertEquals(true, install)
+    }
+
+    @Test
+    fun `ready voice can be tested`() {
+        var tested = false
+        show(
+            TrainingSettings(),
+            speech = SpeechAvailability.READY,
+            onSpeechTest = { tested = true },
+        )
+
+        compose.onNodeWithText(context.getString(R.string.settings_speech_ready))
+            .performScrollTo()
+            .assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.settings_speech_test))
+            .performScrollTo()
+            .performClick()
+
+        assertEquals(true, tested)
     }
 
     @Test
@@ -129,6 +208,11 @@ class SettingsScreenTest {
         onNewFormsPerDayChange: (Int) -> Unit = {},
         onSessionSizeChange: (Int) -> Unit = {},
         onStrictYoChange: (Boolean) -> Unit = {},
+        onAutoPlayAudioChange: (Boolean) -> Unit = {},
+        speech: SpeechAvailability = SpeechAvailability.INITIALIZING,
+        onSpeechTest: () -> Unit = {},
+        onInstallVoice: () -> Unit = {},
+        onOpenSpeechSettings: () -> Unit = {},
         onTenseToggle: (Tense) -> Unit = {},
         backupStatus: BackupStatus? = null,
         onExportClick: () -> Unit = {},
@@ -137,10 +221,14 @@ class SettingsScreenTest {
         compose.setContent {
             GlagolikTheme(dynamicColor = false) {
                 SettingsScreen(
-                    uiState = SettingsUiState(settings, backupStatus),
+                    uiState = SettingsUiState(settings, backupStatus, speech),
                     onNewFormsPerDayChange = onNewFormsPerDayChange,
                     onSessionSizeChange = onSessionSizeChange,
                     onStrictYoChange = onStrictYoChange,
+                    onAutoPlayAudioChange = onAutoPlayAudioChange,
+                    onSpeechTest = onSpeechTest,
+                    onInstallVoice = onInstallVoice,
+                    onOpenSpeechSettings = onOpenSpeechSettings,
                     onTenseToggle = onTenseToggle,
                     onExportClick = onExportClick,
                     onImportClick = onImportClick,

@@ -1,6 +1,7 @@
 package io.github.eleasarb.glagolik.ui.verbs
 
 import androidx.lifecycle.SavedStateHandle
+import io.github.eleasarb.glagolik.data.tts.SpeechAvailability
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.FormRef
@@ -8,6 +9,7 @@ import io.github.eleasarb.glagolik.domain.model.MasteryLevel
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.testing.FakeProgressRepository
+import io.github.eleasarb.glagolik.testing.FakeSpeaker
 import io.github.eleasarb.glagolik.testing.FakeVerbRepository
 import io.github.eleasarb.glagolik.testing.MainDispatcherRule
 import io.github.eleasarb.glagolik.testing.verbSummary
@@ -37,6 +39,7 @@ class VerbDetailViewModelTest {
         partners = listOf(verbSummary(6, "говорить")),
     )
     private val progress = FakeProgressRepository()
+    private val speaker = FakeSpeaker(SpeechAvailability.INITIALIZING)
     private val repository = FakeVerbRepository(verbs = emptyList(), details = mapOf(2 to detail))
 
     @Test
@@ -74,6 +77,19 @@ class VerbDetailViewModelTest {
     }
 
     @Test
+    fun `forms can be spoken once a voice is ready`() = runTest {
+        val viewModel = viewModelFor(2)
+        verbDetailViewModelCollected(viewModel)
+        assertEquals(false, (viewModel.uiState.value as VerbDetailUiState.Success).canSpeak)
+
+        speaker.availability.value = SpeechAvailability.READY
+        viewModel.onSpeak("скажу́")
+
+        assertEquals(true, (viewModel.uiState.value as VerbDetailUiState.Success).canSpeak)
+        assertEquals(listOf("скажу́"), speaker.spoken)
+    }
+
+    @Test
     fun `unknown id gives not found`() = runTest {
         val viewModel = viewModelFor(999)
         verbDetailViewModelCollected(viewModel)
@@ -85,8 +101,12 @@ class VerbDetailViewModelTest {
         assertEquals(VerbDetailUiState.Loading, viewModelFor(2).uiState.value)
     }
 
-    private fun viewModelFor(id: Int) =
-        VerbDetailViewModel(SavedStateHandle(mapOf(VERB_ID_ARG to id)), repository, progress)
+    private fun viewModelFor(id: Int) = VerbDetailViewModel(
+        SavedStateHandle(mapOf(VERB_ID_ARG to id)),
+        repository,
+        progress,
+        speaker,
+    )
 
     /** Collects uiState eagerly, as the UI would, so WhileSubscribed upstreams run. */
     @OptIn(ExperimentalCoroutinesApi::class)

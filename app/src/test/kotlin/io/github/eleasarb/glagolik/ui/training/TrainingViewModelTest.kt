@@ -1,5 +1,6 @@
 package io.github.eleasarb.glagolik.ui.training
 
+import io.github.eleasarb.glagolik.data.tts.SpeechAvailability
 import io.github.eleasarb.glagolik.domain.checking.AnswerResult
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
 import io.github.eleasarb.glagolik.domain.model.FormKey
@@ -10,6 +11,7 @@ import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.domain.usecase.BuildSessionUseCase
 import io.github.eleasarb.glagolik.testing.FakeProgressRepository
 import io.github.eleasarb.glagolik.testing.FakeSettingsRepository
+import io.github.eleasarb.glagolik.testing.FakeSpeaker
 import io.github.eleasarb.glagolik.testing.FakeVerbRepository
 import io.github.eleasarb.glagolik.testing.MainDispatcherRule
 import io.github.eleasarb.glagolik.testing.trainableForm
@@ -30,6 +32,7 @@ class TrainingViewModelTest {
     private val skazhu = trainableForm(2, FormKey.FUTURE_SG1, "скажу́")
     private val idet = trainableForm(9, FormKey.PRESENT_SG3, "идёт")
     private val progress = FakeProgressRepository()
+    private val speaker = FakeSpeaker()
 
     private val future = listOf(
         FormKey.FUTURE_SG1 to "скажу́",
@@ -57,7 +60,7 @@ class TrainingViewModelTest {
             clock = clock,
             random = Random(seed = 1),
         )
-        return TrainingViewModel(buildSession, progress, verbs, settingsRepository, clock)
+        return TrainingViewModel(buildSession, progress, verbs, settingsRepository, speaker, clock)
     }
 
     private fun TrainingViewModel.question(): TrainingUiState.Question =
@@ -144,6 +147,44 @@ class TrainingViewModelTest {
 
         assertTrue(vm.question().feedback is AnswerResult.Incorrect)
         assertEquals(emptyList<ConjugatedForm>(), vm.question().tenseForms)
+    }
+
+    @Test
+    fun `the correct form is spoken only after grading`() {
+        val vm = viewModel()
+        vm.onSpeak()
+        vm.answer("скажет")
+        assertEquals(emptyList<String>(), speaker.spoken)
+
+        vm.onSpeak()
+
+        assertEquals(listOf("скажу́"), speaker.spoken)
+    }
+
+    @Test
+    fun `auto play speaks the matched form after a correct answer`() {
+        val vm = viewModel(TrainingSettings(newFormsPerDay = 1, autoPlayAudio = true))
+        vm.answer("скажу")
+
+        assertEquals(listOf("скажу́"), speaker.spoken)
+    }
+
+    @Test
+    fun `auto play does not speak for an ungraded input`() {
+        val vm = viewModel(TrainingSettings(newFormsPerDay = 1, autoPlayAudio = true))
+        vm.answer("ckaжу")
+
+        assertEquals(emptyList<String>(), speaker.spoken)
+    }
+
+    @Test
+    fun `speaker availability is reflected in the question`() {
+        val vm = viewModel()
+        assertEquals(true, vm.question().canSpeak)
+
+        speaker.availability.value = SpeechAvailability.NO_ENGINE
+
+        assertEquals(false, vm.question().canSpeak)
     }
 
     @Test

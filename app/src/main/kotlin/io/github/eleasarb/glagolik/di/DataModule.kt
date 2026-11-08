@@ -10,7 +10,9 @@ import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.components.ViewModelComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.android.scopes.ViewModelScoped
 import dagger.hilt.components.SingletonComponent
 import io.github.eleasarb.glagolik.data.backup.BackupRepository
 import io.github.eleasarb.glagolik.data.backup.DocumentBackupRepository
@@ -25,6 +27,8 @@ import io.github.eleasarb.glagolik.data.repository.ProgressRepository
 import io.github.eleasarb.glagolik.data.repository.VerbRepository
 import io.github.eleasarb.glagolik.data.settings.DataStoreSettingsRepository
 import io.github.eleasarb.glagolik.data.settings.SettingsRepository
+import io.github.eleasarb.glagolik.data.tts.AndroidSpeaker
+import io.github.eleasarb.glagolik.data.tts.Speaker
 import io.github.eleasarb.glagolik.domain.srs.FsrsScheduler
 import java.time.Clock
 import javax.inject.Singleton
@@ -87,6 +91,15 @@ object BackupModule {
     @Provides
     fun provideContentResolver(@ApplicationContext context: Context): ContentResolver =
         context.contentResolver
+}
+
+/** One engine per ViewModel; the ViewModel closes it in onCleared. */
+@Module
+@InstallIn(ViewModelComponent::class)
+object SpeechModule {
+    @Provides
+    @ViewModelScoped
+    fun provideSpeaker(@ApplicationContext context: Context): Speaker = AndroidSpeaker(context)
 }
 
 @Module

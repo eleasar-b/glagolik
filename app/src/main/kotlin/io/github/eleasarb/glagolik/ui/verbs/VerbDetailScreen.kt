@@ -1,5 +1,6 @@
 package io.github.eleasarb.glagolik.ui.verbs
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,6 +52,7 @@ import io.github.eleasarb.glagolik.ui.components.labelRes
 import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
 
 private const val VARIANT_SEPARATOR = " · "
+private const val SPOKEN_VARIANT_SEPARATOR = ", "
 
 @Composable
 fun VerbDetailRoute(
@@ -65,6 +67,7 @@ fun VerbDetailRoute(
         onBack = onBack,
         onPartnerClick = onPartnerClick,
         modifier = modifier,
+        onSpeak = viewModel::onSpeak,
     )
 }
 
@@ -75,6 +78,7 @@ fun VerbDetailScreen(
     onBack: () -> Unit,
     onPartnerClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    onSpeak: (String) -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier,
@@ -114,6 +118,7 @@ fun VerbDetailScreen(
                 mastery = uiState.mastery,
                 masteryCounts = uiState.masteryCounts,
                 onPartnerClick = onPartnerClick,
+                onSpeak = onSpeak.takeIf { uiState.canSpeak },
                 modifier = contentModifier,
             )
         }
@@ -126,6 +131,7 @@ private fun VerbDetailContent(
     mastery: Map<FormKey, MasteryLevel>,
     masteryCounts: MasteryCounts,
     onPartnerClick: (Int) -> Unit,
+    onSpeak: ((String) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -134,22 +140,38 @@ private fun VerbDetailContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        VerbHeader(summary = verb.summary)
+        VerbHeader(summary = verb.summary, onSpeak = onSpeak)
         if (masteryCounts.total > 0) VerbMasterySummary(counts = masteryCounts)
         if (verb.partners.isNotEmpty()) {
             PartnerChips(partners = verb.partners, onPartnerClick = onPartnerClick)
         }
         Tense.entries.forEach { tense ->
             val forms = verb.formsOf(tense)
-            if (forms.isNotEmpty()) TenseCard(tense = tense, forms = forms, mastery = mastery)
+            if (forms.isNotEmpty()) {
+                TenseCard(tense = tense, forms = forms, mastery = mastery, onSpeak = onSpeak)
+            }
         }
     }
 }
 
 @Composable
-private fun VerbHeader(summary: VerbSummary, modifier: Modifier = Modifier) {
+private fun VerbHeader(
+    summary: VerbSummary,
+    onSpeak: ((String) -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
     Column(modifier = modifier) {
-        Text(text = summary.infinitive, style = MaterialTheme.typography.headlineLarge)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(text = summary.infinitive, style = MaterialTheme.typography.headlineLarge)
+            if (onSpeak != null) {
+                IconButton(onClick = { onSpeak(summary.infinitive) }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_volume_up),
+                        contentDescription = stringResource(R.string.speak),
+                    )
+                }
+            }
+        }
         Text(
             text = stringResource(summary.aspect.labelRes()),
             style = MaterialTheme.typography.labelLarge,
@@ -216,6 +238,7 @@ private fun TenseCard(
     tense: Tense,
     forms: List<ConjugatedForm>,
     mastery: Map<FormKey, MasteryLevel>,
+    onSpeak: ((String) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Card(modifier = modifier.fillMaxWidth()) {
@@ -225,7 +248,9 @@ private fun TenseCard(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
-            forms.forEach { form -> FormRow(form = form, level = mastery[form.key]) }
+            forms.forEach { form ->
+                FormRow(form = form, level = mastery[form.key], onSpeak = onSpeak)
+            }
             if (forms.any { !it.isTrainable }) {
                 Text(
                     text = stringResource(R.string.forms_not_trained),
@@ -238,16 +263,34 @@ private fun TenseCard(
     }
 }
 
-/** [level] is `null` for forms that are not trained. */
+/**
+ * [level] is `null` for forms that are not trained. With [onSpeak], a tap speaks all variants
+ * (a comma gives a short pause between them).
+ */
 @Composable
-private fun FormRow(form: ConjugatedForm, level: MasteryLevel?, modifier: Modifier = Modifier) {
+private fun FormRow(
+    form: ConjugatedForm,
+    level: MasteryLevel?,
+    onSpeak: ((String) -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
     val color = if (form.isTrainable) {
         MaterialTheme.colorScheme.onSurface
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }
+    val speakLabel = stringResource(R.string.speak)
+    val clickable = if (onSpeak != null) {
+        Modifier.clickable(onClickLabel = speakLabel) {
+            onSpeak(form.variants.joinToString(SPOKEN_VARIANT_SEPARATOR))
+        }
+    } else {
+        Modifier
+    }
     Row(
-        modifier = modifier.padding(vertical = 2.dp),
+        modifier = modifier
+            .then(clickable)
+            .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -303,6 +346,7 @@ private fun VerbDetailScreenPreview() {
                     FormKey.PAST_M to MasteryLevel.LEARNING,
                     FormKey.IMPERATIVE_SG to MasteryLevel.NEW,
                 ),
+                canSpeak = true,
             ),
             onBack = {},
             onPartnerClick = {},

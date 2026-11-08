@@ -24,6 +24,8 @@ interface SettingsRepository {
 
     suspend fun setStrictYo(value: Boolean)
 
+    suspend fun setAutoPlayAudio(value: Boolean)
+
     /** Ignored if [tenses] is empty: at least one tense must stay selected. */
     suspend fun setTenses(tenses: Set<Tense>)
 
@@ -49,6 +51,10 @@ class DataStoreSettingsRepository @Inject constructor(
         dataStore.edit { it[STRICT_YO] = value }
     }
 
+    override suspend fun setAutoPlayAudio(value: Boolean) {
+        dataStore.edit { it[AUTO_PLAY_AUDIO] = value }
+    }
+
     override suspend fun setTenses(tenses: Set<Tense>) {
         if (tenses.isEmpty()) return
         dataStore.edit { prefs -> prefs[TENSES] = tenses.mapTo(mutableSetOf()) { it.name } }
@@ -60,6 +66,7 @@ class DataStoreSettingsRepository @Inject constructor(
                 settings.newFormsPerDay.coerceIn(TrainingSettings.NEW_FORMS_RANGE)
             prefs[SESSION_SIZE] = settings.sessionSize.coerceIn(TrainingSettings.SESSION_SIZE_RANGE)
             prefs[STRICT_YO] = settings.strictYo
+            prefs[AUTO_PLAY_AUDIO] = settings.autoPlayAudio
             if (settings.tenses.isNotEmpty()) {
                 prefs[TENSES] = settings.tenses.mapTo(mutableSetOf()) { it.name }
             }
@@ -77,6 +84,7 @@ class DataStoreSettingsRepository @Inject constructor(
             sessionSize = this[SESSION_SIZE] ?: defaults.sessionSize,
             strictYo = this[STRICT_YO] ?: defaults.strictYo,
             tenses = tenses ?: defaults.tenses,
+            autoPlayAudio = this[AUTO_PLAY_AUDIO] ?: defaults.autoPlayAudio,
         )
     }
 
@@ -87,5 +95,6 @@ class DataStoreSettingsRepository @Inject constructor(
         private val SESSION_SIZE = intPreferencesKey("session_size")
         private val STRICT_YO = booleanPreferencesKey("strict_yo")
         private val TENSES = stringSetPreferencesKey("tenses")
+        private val AUTO_PLAY_AUDIO = booleanPreferencesKey("auto_play_audio")
     }
 }

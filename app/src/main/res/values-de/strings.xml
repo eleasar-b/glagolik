@@ -49,6 +49,7 @@
     <string name="training_incorrect">Nicht ganz. Richtig ist:</string>
     <string name="training_yo_hint">Hinweis: wird mit ё geschrieben.</string>
     <string name="training_tense_forms">%1$s: alle Formen</string>
+    <string name="speak">Aussprechen</string>
     <string name="training_latin_letters">Lateinische Buchstaben in deiner Antwort: %1$s. Bitte die russische Tastatur verwenden.</string>
     <string name="training_empty_answer">Bitte gib eine Antwort ein.</string>
     <string name="training_nothing_title">Für heute ist alles erledigt</string>
@@ -61,6 +62,16 @@
     <string name="settings_session_size">Karten pro Session</string>
     <string name="settings_strict_yo">Strenges ё</string>
     <string name="settings_strict_yo_summary">е statt ё als falsch werten</string>
+    <string name="settings_auto_play">Aussprache automatisch abspielen</string>
+    <string name="settings_auto_play_summary">Nach dem Prüfen einer Antwort. Benötigt eine russische Offline-Stimme in der Sprachausgabe des Systems.</string>
+    <string name="settings_speech_checking">Sprachausgabe wird geprüft …</string>
+    <string name="settings_speech_ready">Russische Stimme gefunden. Lautsprecher-Buttons erscheinen nach dem Prüfen einer Antwort und in der Verbtabelle.</string>
+    <string name="settings_speech_no_engine">Keine Sprachausgabe installiert, die Aussprache ist deshalb aus. Installiere eine Sprachausgabe mit russischer Stimme und wähle sie als bevorzugte Engine.</string>
+    <string name="settings_speech_not_installed">Die russische Stimme deiner Sprachausgabe ist nicht heruntergeladen (oder nur online verfügbar), die Aussprache ist deshalb aus. Lade sie herunter und komm dann hierher zurück.</string>
+    <string name="settings_speech_no_russian">Deine Sprachausgabe hat keine russische Stimme, die Aussprache ist deshalb aus. Wähle in den Sprachausgabe-Einstellungen eine Engine mit russischer Stimme.</string>
+    <string name="settings_speech_install">Russische Stimme herunterladen</string>
+    <string name="settings_speech_test">Testen</string>
+    <string name="settings_speech_open">Sprachausgabe-Einstellungen</string>
     <string name="settings_tenses">Abgefragte Zeitformen</string>
     <string name="settings_tenses_hint">Mindestens eine Zeitform bleibt ausgewählt.</string>
     <string name="settings_decrease">Verringern</string>

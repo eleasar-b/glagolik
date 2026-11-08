@@ -8,6 +8,8 @@ data class TrainingSettings(
     val strictYo: Boolean = false,
     /** Tenses that are quizzed; never empty. */
     val tenses: Set<Tense> = Tense.entries.toSet(),
+    /** Speak the correct form automatically once an answer is checked. */
+    val autoPlayAudio: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_NEW_FORMS_PER_DAY = 10

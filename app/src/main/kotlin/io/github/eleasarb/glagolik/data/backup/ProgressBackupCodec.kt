@@ -30,7 +30,7 @@ class BackupFormatException(message: String, cause: Throwable? = null) :
  * ```
  * { "format": "glagolik-progress", "version": 1, "exportedAt": "...Z",
  *   "settings": { "newFormsPerDay": 10, "sessionSize": 20, "strictYo": false,
- *                 "tenses": ["PRESENT", ...] },
+ *                 "tenses": ["PRESENT", ...], "autoPlayAudio": false },
  *   "cards": [ { "verbId": 2, "form": "FUTURE_SG1", "state": "REVIEW", "step": null,
  *                "stability": 2.3, "difficulty": 2.1, "dueAt": 1767427260000,
  *                "lastReviewAt": 1767254460000, "introducedAt": 1767254400000 } ],
@@ -83,12 +83,15 @@ object ProgressBackupCodec {
         .put("sessionSize", settings.sessionSize)
         .put("strictYo", settings.strictYo)
         .put("tenses", JSONArray(settings.tenses.map { it.name }.sorted()))
+        .put("autoPlayAudio", settings.autoPlayAudio)
 
     private fun decodeSettings(json: JSONObject) = TrainingSettings(
         newFormsPerDay = json.getInt("newFormsPerDay"),
         sessionSize = json.getInt("sessionSize"),
         strictYo = json.getBoolean("strictYo"),
         tenses = json.getJSONArray("tenses").strings().map(Tense::valueOf).toSet(),
+        // Added after version 1 was released; older files do not have it.
+        autoPlayAudio = json.optBoolean("autoPlayAudio", false),
     )
 
     private fun encodeCard(card: CardEntity) = JSONObject()

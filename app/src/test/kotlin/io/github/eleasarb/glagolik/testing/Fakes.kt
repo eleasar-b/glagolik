@@ -7,6 +7,8 @@ import io.github.eleasarb.glagolik.data.db.VerbFormEntity
 import io.github.eleasarb.glagolik.data.repository.ProgressRepository
 import io.github.eleasarb.glagolik.data.repository.VerbRepository
 import io.github.eleasarb.glagolik.data.settings.SettingsRepository
+import io.github.eleasarb.glagolik.data.tts.Speaker
+import io.github.eleasarb.glagolik.data.tts.SpeechAvailability
 import io.github.eleasarb.glagolik.domain.model.Aspect
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.FormRef
@@ -151,6 +153,10 @@ class FakeSettingsRepository(initial: TrainingSettings = TrainingSettings()) : S
         state.value = state.value.copy(strictYo = value)
     }
 
+    override suspend fun setAutoPlayAudio(value: Boolean) {
+        state.value = state.value.copy(autoPlayAudio = value)
+    }
+
     override suspend fun setTenses(tenses: Set<Tense>) {
         if (tenses.isNotEmpty()) state.value = state.value.copy(tenses = tenses)
     }
@@ -210,3 +216,26 @@ fun verbSummary(id: Int, infinitive: String): VerbSummary = VerbSummary(
     aspect = Aspect.IMPERFECTIVE,
     translation = Translation(german = "", english = ""),
 )
+
+/** Records spoken text instead of playing it; speaks only when READY, like the real one. */
+class FakeSpeaker(initial: SpeechAvailability = SpeechAvailability.READY) : Speaker {
+    override val availability = MutableStateFlow(initial)
+    val spoken = mutableListOf<String>()
+    var isClosed = false
+        private set
+
+    override fun speak(text: String) {
+        if (availability.value == SpeechAvailability.READY) spoken += text
+    }
+
+    var refreshes = 0
+        private set
+
+    override fun refresh() {
+        refreshes++
+    }
+
+    override fun close() {
+        isClosed = true
+    }
+}

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,15 +36,19 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.eleasarb.glagolik.R
 import io.github.eleasarb.glagolik.data.backup.BackupSummary
@@ -66,6 +71,9 @@ fun SettingsRoute(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
+    val context = LocalContext.current
+    // Coming back from the system settings: a voice may have been installed meanwhile.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var pendingImport by rememberSaveable { mutableStateOf<Uri?>(null) }
     // Storage Access Framework: the learner picks the location, no permission needed.
@@ -81,6 +89,10 @@ fun SettingsRoute(
         onNewFormsPerDayChange = viewModel::onNewFormsPerDayChange,
         onSessionSizeChange = viewModel::onSessionSizeChange,
         onStrictYoChange = viewModel::onStrictYoChange,
+        onAutoPlayAudioChange = viewModel::onAutoPlayAudioChange,
+        onSpeechTest = viewModel::onSpeechTest,
+        onInstallVoice = { context.openVoiceInstall() },
+        onOpenSpeechSettings = { context.openSpeechSettings() },
         onTenseToggle = viewModel::onTenseToggle,
         onExportClick = { exportLauncher.launch(viewModel.exportFileName()) },
         onImportClick = { importLauncher.launch(IMPORT_MIME_TYPES) },
@@ -130,6 +142,10 @@ fun SettingsScreen(
     onNewFormsPerDayChange: (Int) -> Unit,
     onSessionSizeChange: (Int) -> Unit,
     onStrictYoChange: (Boolean) -> Unit,
+    onAutoPlayAudioChange: (Boolean) -> Unit,
+    onSpeechTest: () -> Unit,
+    onInstallVoice: () -> Unit,
+    onOpenSpeechSettings: () -> Unit,
     onTenseToggle: (Tense) -> Unit,
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
@@ -168,12 +184,50 @@ fun SettingsScreen(
                 onTenseToggle = onTenseToggle,
             )
             HorizontalDivider()
+            AudioSettingsSection(
+                autoPlay = uiState.settings.autoPlayAudio,
+                speech = uiState.speech,
+                onAutoPlayChange = onAutoPlayAudioChange,
+                onTest = onSpeechTest,
+                onInstallVoice = onInstallVoice,
+                onOpenSystemSettings = onOpenSpeechSettings,
+            )
+            HorizontalDivider()
             BackupSection(
                 status = uiState.backupStatus,
                 onExportClick = onExportClick,
                 onImportClick = onImportClick,
             )
         }
+    }
+}
+
+@Composable
+internal fun SwitchSetting(
+    label: String,
+    summary: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // The whole row toggles, so label and switch form one target for touch and TalkBack.
+    Row(
+        modifier = modifier.toggleable(
+            value = checked,
+            role = Role.Switch,
+            onValueChange = onCheckedChange,
+        ),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = label, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = summary,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
@@ -201,20 +255,12 @@ private fun TrainingSettingsSection(
             onValueChange = onSessionSizeChange,
         )
         HorizontalDivider()
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.settings_strict_yo),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Text(
-                    text = stringResource(R.string.settings_strict_yo_summary),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Switch(checked = settings.strictYo, onCheckedChange = onStrictYoChange)
-        }
+        SwitchSetting(
+            label = stringResource(R.string.settings_strict_yo),
+            summary = stringResource(R.string.settings_strict_yo_summary),
+            checked = settings.strictYo,
+            onCheckedChange = onStrictYoChange,
+        )
         HorizontalDivider()
         Text(
             text = stringResource(R.string.settings_tenses),
@@ -351,6 +397,10 @@ private fun SettingsScreenPreview() {
             onNewFormsPerDayChange = {},
             onSessionSizeChange = {},
             onStrictYoChange = {},
+            onAutoPlayAudioChange = {},
+            onSpeechTest = {},
+            onInstallVoice = {},
+            onOpenSpeechSettings = {},
             onTenseToggle = {},
             onExportClick = {},
             onImportClick = {},

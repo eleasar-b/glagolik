@@ -75,6 +75,7 @@ fun TrainingRoute(
         onContinue = viewModel::onContinue,
         onClose = onClose,
         modifier = modifier,
+        onSpeak = viewModel::onSpeak,
     )
 }
 
@@ -87,6 +88,7 @@ fun TrainingScreen(
     onContinue: (easy: Boolean) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    onSpeak: () -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier,
@@ -143,6 +145,7 @@ fun TrainingScreen(
                 onInputChange = onInputChange,
                 onSubmit = onSubmit,
                 onContinue = onContinue,
+                onSpeak = onSpeak,
                 modifier = contentModifier,
             )
         }
@@ -155,6 +158,7 @@ private fun QuestionContent(
     onInputChange: (String) -> Unit,
     onSubmit: () -> Unit,
     onContinue: (easy: Boolean) -> Unit,
+    onSpeak: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -194,7 +198,10 @@ private fun QuestionContent(
             )
             val feedback = state.feedback
             if (feedback is AnswerResult.Correct || feedback is AnswerResult.Incorrect) {
-                FeedbackCard(feedback = feedback)
+                FeedbackCard(
+                    feedback = feedback,
+                    onSpeak = onSpeak.takeIf { state.canSpeak },
+                )
             }
             if (feedback is AnswerResult.Incorrect && state.tenseForms.isNotEmpty()) {
                 TenseFormsCard(
@@ -252,8 +259,13 @@ private fun inputHint(feedback: AnswerResult?): String? = when (feedback) {
     else -> null
 }
 
+/** [onSpeak] is `null` when no voice is available; then no speaker button is shown. */
 @Composable
-private fun FeedbackCard(feedback: AnswerResult, modifier: Modifier = Modifier) {
+private fun FeedbackCard(
+    feedback: AnswerResult,
+    onSpeak: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
     val correct = feedback is AnswerResult.Correct
     val colors = if (correct) {
         CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
@@ -278,7 +290,21 @@ private fun FeedbackCard(feedback: AnswerResult, modifier: Modifier = Modifier) 
     Card(modifier = modifier.fillMaxWidth(), colors = colors) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = headline, style = MaterialTheme.typography.titleMedium)
-            Text(text = answer, style = MaterialTheme.typography.headlineSmall)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = answer,
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.weight(1f),
+                )
+                if (onSpeak != null) {
+                    IconButton(onClick = onSpeak) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_volume_up),
+                            contentDescription = stringResource(R.string.speak),
+                        )
+                    }
+                }
+            }
             if (yoHint) {
                 Text(
                     text = stringResource(R.string.training_yo_hint),
@@ -398,6 +424,7 @@ private fun TrainingScreenIncorrectPreview() {
                 input = "скажишь",
                 feedback = AnswerResult.Incorrect(listOf("ска́жешь")),
                 tenseForms = forms,
+                canSpeak = true,
             ),
             onInputChange = {},
             onSubmit = {},
