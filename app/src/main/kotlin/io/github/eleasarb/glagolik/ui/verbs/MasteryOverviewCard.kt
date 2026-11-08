@@ -3,6 +3,7 @@ package io.github.eleasarb.glagolik.ui.verbs
 import androidx.annotation.PluralsRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -29,13 +30,50 @@ import io.github.eleasarb.glagolik.ui.components.labelRes
 import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
 
 /**
- * Mastery of all trainable cards, shown above the verb list: one bar for the forms and one for
- * the meaning (both directions), each with the learned cards and their share, then the number
- * of started verbs.
+ * Mastery of all trainable cards, shown above the verb list: the [ProgressCard] plus the number
+ * of started verbs, the legend and what the levels mean.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MasteryOverviewCard(overview: MasteryOverview, modifier: Modifier = Modifier) {
+    ProgressCard(
+        forms = overview.forms,
+        meaning = overview.meaning,
+        dueNow = overview.dueNow,
+        modifier = modifier,
+    ) {
+        Text(
+            text = stringResource(
+                R.string.mastery_verbs_started,
+                overview.startedVerbs,
+                overview.totalVerbs,
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            MASTERY_DISPLAY_ORDER.forEach { level -> LegendItem(level = level) }
+        }
+        Text(
+            text = stringResource(R.string.mastery_explanation),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * "Progress" with the due cards and one bar each for the forms and the meaning ("x of y
+ * learned · z %"), for all verbs or a single one. Without [meaning] (verbs without meaning
+ * cards) only the forms are shown. [footer] follows below the bars.
+ */
+@Composable
+fun ProgressCard(
+    forms: MasteryCounts,
+    meaning: MasteryCounts?,
+    dueNow: Int,
+    modifier: Modifier = Modifier,
+    footer: @Composable ColumnScope.() -> Unit = {},
+) {
     Card(modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -48,37 +86,24 @@ fun MasteryOverviewCard(overview: MasteryOverview, modifier: Modifier = Modifier
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = stringResource(R.string.mastery_due, overview.dueNow),
+                    text = stringResource(R.string.mastery_due, dueNow),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
             KindMastery(
                 label = stringResource(R.string.mastery_forms),
-                counts = overview.forms,
+                counts = forms,
                 summary = R.plurals.mastery_summary,
             )
-            KindMastery(
-                label = stringResource(R.string.mastery_meaning),
-                counts = overview.meaning,
-                summary = R.plurals.mastery_summary_cards,
-            )
-            Text(
-                text = stringResource(
-                    R.string.mastery_verbs_started,
-                    overview.startedVerbs,
-                    overview.totalVerbs,
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                MASTERY_DISPLAY_ORDER.forEach { level -> LegendItem(level = level) }
+            if (meaning != null) {
+                KindMastery(
+                    label = stringResource(R.string.mastery_meaning),
+                    counts = meaning,
+                    summary = R.plurals.mastery_summary_cards,
+                )
             }
-            Text(
-                text = stringResource(R.string.mastery_explanation),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            footer()
         }
     }
 }

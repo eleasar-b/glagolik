@@ -115,10 +115,7 @@ fun VerbDetailScreen(
             }
 
             is VerbDetailUiState.Success -> VerbDetailContent(
-                verb = uiState.verb,
-                mastery = uiState.mastery,
-                meaning = uiState.meaning,
-                masteryCounts = uiState.masteryCounts,
+                state = uiState,
                 onPartnerClick = onPartnerClick,
                 onSpeak = onSpeak.takeIf { uiState.canSpeak },
                 modifier = contentModifier,
@@ -129,29 +126,41 @@ fun VerbDetailScreen(
 
 @Composable
 private fun VerbDetailContent(
-    verb: VerbDetail,
-    mastery: Map<FormKey, MasteryLevel>,
-    meaning: Map<Exercise, MasteryLevel>,
-    masteryCounts: MasteryCounts,
+    state: VerbDetailUiState.Success,
     onPartnerClick: (Int) -> Unit,
     onSpeak: ((String) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
+    val verb = state.verb
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        VerbHeader(summary = verb.summary, meaning = meaning, onSpeak = onSpeak)
-        if (masteryCounts.total > 0) VerbMasterySummary(counts = masteryCounts)
+        VerbHeader(summary = verb.summary, onSpeak = onSpeak)
+        val meaningCounts = state.meaningCounts
+        if (state.masteryCounts.total > 0 || meaningCounts != null) {
+            ProgressCard(
+                forms = state.masteryCounts,
+                meaning = meaningCounts,
+                dueNow = state.dueNow,
+            )
+        }
         if (verb.partners.isNotEmpty()) {
             PartnerChips(partners = verb.partners, onPartnerClick = onPartnerClick)
+        }
+        if (state.meaning.isNotEmpty()) {
+            InfinitiveCard(
+                infinitive = verb.summary.infinitive,
+                meaning = state.meaning,
+                onSpeak = onSpeak,
+            )
         }
         Tense.entries.forEach { tense ->
             val forms = verb.formsOf(tense)
             if (forms.isNotEmpty()) {
-                TenseCard(tense = tense, forms = forms, mastery = mastery, onSpeak = onSpeak)
+                TenseCard(tense = tense, forms = forms, mastery = state.mastery, onSpeak = onSpeak)
             }
         }
     }
@@ -160,7 +169,6 @@ private fun VerbDetailContent(
 @Composable
 private fun VerbHeader(
     summary: VerbSummary,
-    meaning: Map<Exercise, MasteryLevel>,
     onSpeak: ((String) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
@@ -181,39 +189,11 @@ private fun VerbHeader(
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
         )
-        Row(
+        Text(
+            text = summary.translation.localized(),
+            style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(top = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = summary.translation.localized(),
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            MeaningDots(meaning = meaning, modifier = Modifier.padding(start = 8.dp))
-        }
-    }
-}
-
-/** One dot per meaning direction (RU→DE, then DE→RU), each announced with its level. */
-@Composable
-private fun MeaningDots(meaning: Map<Exercise, MasteryLevel>, modifier: Modifier = Modifier) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Exercise.MEANINGS.forEach { exercise ->
-            val level = meaning[exercise] ?: return@forEach
-            val description = stringResource(
-                if (exercise == Exercise.MeaningRuDe) {
-                    R.string.verb_meaning_ru_de
-                } else {
-                    R.string.verb_meaning_de_ru
-                },
-                stringResource(level.labelRes()),
-            )
-            MasteryDot(
-                level = level,
-                modifier = Modifier.semantics { contentDescription = description },
-            )
-        }
+        )
     }
 }
 
@@ -248,20 +228,40 @@ private fun PartnerChips(
     }
 }
 
+/**
+ * The meaning cards of the verb, like a tense: one row per direction with the infinitive and
+ * its level. A tap speaks the infinitive.
+ */
 @Composable
-private fun VerbMasterySummary(counts: MasteryCounts, modifier: Modifier = Modifier) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        MasteryBar(counts = counts, modifier = Modifier.fillMaxWidth(), height = 8.dp)
-        Text(
-            text = pluralStringResource(
-                R.plurals.mastery_summary,
-                counts.total,
-                counts.mature,
-                counts.total,
-            ),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+private fun InfinitiveCard(
+    infinitive: String,
+    meaning: Map<Exercise, MasteryLevel>,
+    onSpeak: ((String) -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    Card(modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.verb_infinitive),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            Exercise.MEANINGS.forEach { exercise ->
+                val level = meaning[exercise] ?: return@forEach
+                LevelRow(
+                    label = stringResource(
+                        if (exercise == Exercise.MeaningRuDe) {
+                            R.string.verb_direction_ru_de
+                        } else {
+                            R.string.verb_direction_de_ru
+                        },
+                    ),
+                    text = infinitive,
+                    level = level,
+                    onSpeak = onSpeak?.let { speak -> { speak(infinitive) } },
+                )
+            }
+        }
     }
 }
 
@@ -306,16 +306,36 @@ private fun FormRow(
     onSpeak: ((String) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    val color = if (form.isTrainable) {
+    LevelRow(
+        label = stringResource(form.key.pronounRes()),
+        text = form.variants.joinToString(VARIANT_SEPARATOR),
+        level = level,
+        onSpeak = onSpeak?.let { speak ->
+            { speak(form.variants.joinToString(SPOKEN_VARIANT_SEPARATOR)) }
+        },
+        modifier = modifier,
+        isTrainable = form.isTrainable,
+    )
+}
+
+/** Label column, text and the level dot ([level] `null`: no dot); a tap calls [onSpeak]. */
+@Composable
+private fun LevelRow(
+    label: String,
+    text: String,
+    level: MasteryLevel?,
+    onSpeak: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    isTrainable: Boolean = true,
+) {
+    val color = if (isTrainable) {
         MaterialTheme.colorScheme.onSurface
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }
     val speakLabel = stringResource(R.string.speak)
     val clickable = if (onSpeak != null) {
-        Modifier.clickable(onClickLabel = speakLabel) {
-            onSpeak(form.variants.joinToString(SPOKEN_VARIANT_SEPARATOR))
-        }
+        Modifier.clickable(onClickLabel = speakLabel, onClick = onSpeak)
     } else {
         Modifier
     }
@@ -326,13 +346,13 @@ private fun FormRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = stringResource(form.key.pronounRes()),
+            text = label,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(96.dp),
         )
         Text(
-            text = form.variants.joinToString(VARIANT_SEPARATOR),
+            text = text,
             style = MaterialTheme.typography.bodyLarge,
             color = color,
             modifier = Modifier.weight(1f),
@@ -382,6 +402,7 @@ private fun VerbDetailScreenPreview() {
                     Exercise.MeaningRuDe to MasteryLevel.YOUNG,
                     Exercise.MeaningDeRu to MasteryLevel.LEARNING,
                 ),
+                dueNow = 2,
                 canSpeak = true,
             ),
             onBack = {},

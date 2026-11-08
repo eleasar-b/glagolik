@@ -58,7 +58,7 @@ class VerbDetailScreenTest {
     )
 
     @Test
-    fun `trained forms show their level and the verb a summary`() {
+    fun `trained forms show their level and the verb a progress card`() {
         show(
             VerbDetailUiState.Success(
                 verb = podnyat,
@@ -70,8 +70,11 @@ class VerbDetailScreenTest {
             ),
         )
 
-        val summary = context.resources.getQuantityString(R.plurals.mastery_summary, 3, 1, 3)
-        compose.onNodeWithText(summary).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.mastery_title)).assertIsDisplayed()
+        compose.onNodeWithText("2 of 3 learned · 66%").assertIsDisplayed()
+        // No meaning cards: no meaning bar, no infinitive card.
+        compose.onNodeWithText(string(R.string.mastery_meaning)).assertDoesNotExist()
+        compose.onNodeWithText(string(R.string.verb_infinitive)).assertDoesNotExist()
         compose.onNodeWithContentDescription(context.getString(R.string.mastery_mature))
             .assertExists()
         compose.onNodeWithContentDescription(context.getString(R.string.mastery_learning))
@@ -79,7 +82,8 @@ class VerbDetailScreenTest {
     }
 
     @Test
-    fun `two dots next to the translation show the meaning levels`() {
+    fun `meaning cards show a meaning bar, the due cards and an infinitive card`() {
+        var spoken: String? = null
         show(
             VerbDetailUiState.Success(
                 verb = podnyat,
@@ -87,24 +91,23 @@ class VerbDetailScreenTest {
                     Exercise.MeaningRuDe to MasteryLevel.YOUNG,
                     Exercise.MeaningDeRu to MasteryLevel.NEW,
                 ),
+                dueNow = 1,
+                canSpeak = true,
             ),
+            onSpeak = { spoken = it },
         )
 
-        val young = string(R.string.mastery_young)
-        val new = string(R.string.mastery_new)
-        compose.onNodeWithContentDescription(context.getString(R.string.verb_meaning_ru_de, young))
+        compose.onNodeWithText(context.getString(R.string.mastery_due, 1)).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.mastery_meaning)).assertIsDisplayed()
+        compose.onNodeWithText("1 of 2 learned · 50%").assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.verb_infinitive)).performScrollTo()
             .assertIsDisplayed()
-        compose.onNodeWithContentDescription(context.getString(R.string.verb_meaning_de_ru, new))
+        compose.onNodeWithText(string(R.string.verb_direction_ru_de)).performScrollTo()
             .assertIsDisplayed()
-    }
-
-    @Test
-    fun `no meaning dots without meaning levels`() {
-        show(VerbDetailUiState.Success(verb = podnyat))
-
-        val new = string(R.string.mastery_new)
-        compose.onNodeWithContentDescription(context.getString(R.string.verb_meaning_ru_de, new))
-            .assertDoesNotExist()
+        compose.onNodeWithText(string(R.string.verb_direction_de_ru)).performScrollTo()
+            .performClick()
+        assertEquals("подня́ть", spoken)
+        compose.onNodeWithContentDescription(string(R.string.mastery_young)).assertExists()
     }
 
     @Test

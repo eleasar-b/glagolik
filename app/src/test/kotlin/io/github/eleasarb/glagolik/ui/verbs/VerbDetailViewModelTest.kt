@@ -16,7 +16,10 @@ import io.github.eleasarb.glagolik.testing.MainDispatcherRule
 import io.github.eleasarb.glagolik.testing.formKey
 import io.github.eleasarb.glagolik.testing.verbSummary
 import io.github.eleasarb.glagolik.ui.navigation.VERB_ID_ARG
+import java.time.Clock
+import java.time.Duration
 import java.time.Instant
+import java.time.ZoneOffset
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -105,6 +108,21 @@ class VerbDetailViewModelTest {
     }
 
     @Test
+    fun `due cards of the verb count forms and meaning`() = runTest {
+        // AGAIN is due after a minute, EASY only after days.
+        progress.recordReview(formKey(4, FormKey.PAST_M), Rating.AGAIN, NOW)
+        progress.recordReview(CardKey(4, Exercise.MeaningDeRu), Rating.AGAIN, NOW)
+        progress.recordReview(CardKey(4, Exercise.MeaningRuDe), Rating.EASY, NOW)
+        progress.recordReview(CardKey(2, Exercise.MeaningDeRu), Rating.AGAIN, NOW)
+        val viewModel = viewModelFor(4)
+        verbDetailViewModelCollected(viewModel)
+
+        val state = viewModel.uiState.value as VerbDetailUiState.Success
+        assertEquals(2, state.dueNow)
+        assertEquals(1, state.meaningCounts?.learning)
+    }
+
+    @Test
     fun `reference verbs and verbs without translation have no meaning levels`() = runTest {
         listOf(2, 8).forEach { id ->
             val viewModel = viewModelFor(id)
@@ -145,6 +163,7 @@ class VerbDetailViewModelTest {
         repository,
         progress,
         speaker,
+        Clock.fixed(NOW + Duration.ofMinutes(5), ZoneOffset.UTC),
     )
 
     /** Collects uiState eagerly, as the UI would, so WhileSubscribed upstreams run. */

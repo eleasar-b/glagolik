@@ -49,9 +49,10 @@
         <item quantity="one">%1$d of %2$d card mature</item>
         <item quantity="other">%1$d of %2$d cards mature</item>
     </plurals>
-    <!-- %1$s: mastery level. The arrows name the direction of the meaning exercise. -->
-    <string name="verb_meaning_ru_de">Meaning RU→EN: %1$s</string>
-    <string name="verb_meaning_de_ru">Meaning EN→RU: %1$s</string>
+    <string name="verb_infinitive">Infinitive</string>
+    <!-- Direction of a meaning exercise: pick the translation / type the infinitive -->
+    <string name="verb_direction_ru_de">RU→EN</string>
+    <string name="verb_direction_de_ru">EN→RU</string>
 
     <!-- Russian pronouns, identical in every UI language -->
     <string name="pronoun_sg1" translatable="false">я</string>
