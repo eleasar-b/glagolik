@@ -17,6 +17,18 @@
     <string name="tense_imperative">Imperativ</string>
     <string name="forms_not_trained">Graue Formen sind im heutigen Russisch nicht gebräuchlich und werden nicht abgefragt.</string>
 
+    <string name="mastery_title">Fortschritt</string>
+    <string name="mastery_new">Neu</string>
+    <string name="mastery_learning">Lernen</string>
+    <string name="mastery_young">Jung</string>
+    <string name="mastery_mature">Gefestigt</string>
+    <string name="mastery_due">Jetzt fällig: %1$d</string>
+    <string name="mastery_explanation">Gefestigt: Die nächste Wiederholung ist mindestens drei Wochen entfernt.</string>
+    <plurals name="mastery_summary">
+        <item quantity="one">%1$d von %2$d Form gefestigt</item>
+        <item quantity="other">%1$d von %2$d Formen gefestigt</item>
+    </plurals>
+
     <string name="about_title">Info</string>
     <string name="about_version">Glagolik %1$s</string>
     <string name="about_data_title">Verbdaten</string>

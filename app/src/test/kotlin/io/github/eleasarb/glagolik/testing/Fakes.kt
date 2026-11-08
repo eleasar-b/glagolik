@@ -96,7 +96,8 @@ class FakeVerbRepository(
 /** Progress backed by a map, using the real FSRS scheduler without fuzz. */
 class FakeProgressRepository(private val scheduler: FsrsScheduler = FsrsScheduler(fuzz = null)) :
     ProgressRepository {
-    val cards = linkedMapOf<FormRef, SrsCard>()
+    private val state = MutableStateFlow<Map<FormRef, SrsCard>>(emptyMap())
+    val cards: Map<FormRef, SrsCard> get() = state.value
     val introducedAt = mutableMapOf<FormRef, Instant>()
     val reviews = mutableListOf<Pair<FormRef, Rating>>()
 
@@ -109,7 +110,7 @@ class FakeProgressRepository(private val scheduler: FsrsScheduler = FsrsSchedule
         duration: Duration?,
     ): SrsCard {
         val reviewed = scheduler.review(cards[ref] ?: SrsCard(due = at), rating, at)
-        cards[ref] = reviewed
+        state.value += ref to reviewed
         introducedAt.putIfAbsent(ref, at)
         reviews += ref to rating
         return reviewed
@@ -125,6 +126,12 @@ class FakeProgressRepository(private val scheduler: FsrsScheduler = FsrsSchedule
 
     override suspend fun countIntroducedSince(since: Instant): Int =
         introducedAt.values.count { !it.isBefore(since) }
+
+    override fun observeCards(): Flow<Map<FormRef, SrsCard>> = state
+
+    override fun observeCards(verbId: Int): Flow<Map<FormKey, SrsCard>> = state.map { all ->
+        all.filterKeys { it.verbId == verbId }.mapKeys { it.key.form }
+    }
 }
 
 class FakeSettingsRepository(initial: TrainingSettings = TrainingSettings()) : SettingsRepository {

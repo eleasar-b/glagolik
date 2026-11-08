@@ -13,6 +13,8 @@ import io.github.eleasarb.glagolik.domain.srs.SrsCard
 import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 class OfflineProgressRepository @Inject constructor(
     private val dao: ProgressDao,
@@ -51,6 +53,14 @@ class OfflineProgressRepository @Inject constructor(
 
     override suspend fun countIntroducedSince(since: Instant): Int =
         dao.countIntroducedSince(since.toEpochMilli())
+
+    override fun observeCards(): Flow<Map<FormRef, SrsCard>> =
+        dao.observeAllCards().map { rows -> rows.associate { it.ref() to it.toSrsCard() } }
+
+    override fun observeCards(verbId: Int): Flow<Map<FormKey, SrsCard>> =
+        dao.observeCards(verbId).map { rows ->
+            rows.associate { FormKey.valueOf(it.form) to it.toSrsCard() }
+        }
 }
 
 private fun CardEntity.ref(): FormRef = FormRef(verbId, FormKey.valueOf(form))

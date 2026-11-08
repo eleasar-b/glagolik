@@ -1,11 +1,14 @@
 package io.github.eleasarb.glagolik.ui.verbs
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
@@ -27,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -34,9 +38,17 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.eleasarb.glagolik.R
 import io.github.eleasarb.glagolik.domain.model.Aspect
+import io.github.eleasarb.glagolik.domain.model.MasteryCounts
+import io.github.eleasarb.glagolik.domain.model.MasteryOverview
 import io.github.eleasarb.glagolik.domain.model.Translation
 import io.github.eleasarb.glagolik.domain.model.VerbSummary
+import io.github.eleasarb.glagolik.ui.components.MasteryBar
 import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
+
+private const val OVERVIEW_KEY = "mastery-overview"
+
+/** Wide enough for "18/18", so the bars of all rows end at the same position. */
+private val FRACTION_MIN_WIDTH = 40.dp
 
 @Composable
 fun VerbListRoute(
@@ -131,35 +143,79 @@ private fun VerbList(
         }
         return
     }
+    val mastery = uiState.mastery
     LazyColumn(modifier = modifier.fillMaxSize()) {
+        if (mastery != null && uiState.query.isBlank()) {
+            item(key = OVERVIEW_KEY) {
+                MasteryOverviewCard(
+                    overview = mastery,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+        }
         items(items = uiState.verbs, key = { it.id }) { verb ->
-            VerbRow(verb = verb, onClick = { onVerbClick(verb.id) })
+            VerbRow(
+                verb = verb,
+                mastery = mastery?.byVerb?.get(verb.id),
+                onClick = { onVerbClick(verb.id) },
+            )
             HorizontalDivider()
         }
     }
 }
 
 @Composable
-private fun VerbRow(verb: VerbSummary, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    ListItem(
-        modifier = modifier.clickable(onClick = onClick),
-        headlineContent = {
-            Text(text = verb.infinitive, style = MaterialTheme.typography.titleMedium)
-        },
-        supportingContent = {
-            Text(
-                text = verb.translation.localized(),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+private fun VerbRow(
+    verb: VerbSummary,
+    mastery: MasteryCounts?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.clickable(onClick = onClick)) {
+        ListItem(
+            headlineContent = {
+                Text(text = verb.infinitive, style = MaterialTheme.typography.titleMedium)
+            },
+            supportingContent = {
+                Text(
+                    text = verb.translation.localized(),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            },
+            trailingContent = {
+                Text(
+                    text = stringResource(verb.aspect.labelRes()),
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            },
+        )
+        // Below the ListItem, so the trailing aspect label does not shorten the bar.
+        if (mastery != null && mastery.isStarted) {
+            VerbMastery(
+                counts = mastery,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
             )
-        },
-        trailingContent = {
-            Text(
-                text = stringResource(verb.aspect.labelRes()),
-                style = MaterialTheme.typography.labelMedium,
-            )
-        },
-    )
+        }
+    }
+}
+
+/** Bar and "mature/total" for a verb with at least one answered form. */
+@Composable
+private fun VerbMastery(counts: MasteryCounts, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        MasteryBar(counts = counts, modifier = Modifier.weight(1f))
+        Text(
+            text = stringResource(R.string.mastery_fraction, counts.mature, counts.total),
+            style = MaterialTheme.typography.labelSmall,
+            textAlign = TextAlign.End,
+            modifier = Modifier.widthIn(min = FRACTION_MIN_WIDTH),
+        )
+    }
 }
 
 @Preview(showBackground = true)
@@ -174,6 +230,14 @@ private fun VerbListScreenPreview() {
                     VerbSummary(2, "сказа́ть", Aspect.PERFECTIVE, Translation("sagen", "say")),
                 ),
                 isLoading = false,
+                mastery = MasteryOverview(
+                    total = MasteryCounts(new = 22, learning = 2, young = 4, mature = 4),
+                    byVerb = mapOf(
+                        1 to MasteryCounts(new = 9, learning = 1, young = 3, mature = 4),
+                        2 to MasteryCounts(new = 13, learning = 1, young = 1),
+                    ),
+                    dueNow = 3,
+                ),
             ),
             onQueryChange = {},
             onVerbClick = {},

@@ -12,6 +12,7 @@ import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.domain.srs.SrsCard
 import java.time.Duration
 import java.time.Instant
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -104,6 +105,23 @@ class OfflineProgressRepositoryTest {
         assertEquals(1, repository.countIntroducedSince(tomorrow))
         assertEquals(2, repository.countIntroducedSince(NOW))
         assertEquals(setOf(skazatFuture, skazatPast), repository.getKnownForms())
+    }
+
+    @Test
+    fun `observed cards reflect every stored review`() = runTest {
+        assertEquals(emptyMap<FormRef, SrsCard>(), repository.observeCards().first())
+
+        val future = repository.recordReview(skazatFuture, Rating.GOOD, NOW)
+        val past = repository.recordReview(skazatPast, Rating.AGAIN, NOW)
+        val other = FormRef(verbId = 3, form = FormKey.PAST_M)
+        repository.recordReview(other, Rating.GOOD, NOW)
+
+        assertEquals(future, repository.observeCards().first()[skazatFuture])
+        assertEquals(3, repository.observeCards().first().size)
+        assertEquals(
+            mapOf(FormKey.FUTURE_SG1 to future, FormKey.PAST_M to past),
+            repository.observeCards(verbId = 2).first(),
+        )
     }
 
     private companion object {

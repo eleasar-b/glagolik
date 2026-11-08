@@ -11,6 +11,8 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import io.github.eleasarb.glagolik.R
 import io.github.eleasarb.glagolik.domain.model.Aspect
+import io.github.eleasarb.glagolik.domain.model.MasteryCounts
+import io.github.eleasarb.glagolik.domain.model.MasteryOverview
 import io.github.eleasarb.glagolik.domain.model.Translation
 import io.github.eleasarb.glagolik.domain.model.VerbSummary
 import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
@@ -74,6 +76,44 @@ class VerbListScreenTest {
         show(VerbListUiState(verbs = emptyList(), isLoading = true))
 
         compose.onNodeWithText(context.getString(R.string.search_no_results)).assertDoesNotExist()
+    }
+
+    private val mastery = MasteryOverview(
+        total = MasteryCounts(new = 30, learning = 2, young = 3, mature = 4),
+        byVerb = mapOf(
+            1 to MasteryCounts(new = 17),
+            2 to MasteryCounts(new = 8, learning = 2, young = 3, mature = 4),
+        ),
+        dueNow = 5,
+    )
+
+    @Test
+    fun `overview shows counts per level and due forms`() {
+        show(VerbListUiState(verbs = verbs, isLoading = false, mastery = mastery))
+
+        compose.onNodeWithText(context.getString(R.string.mastery_title)).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.mastery_due, 5)).assertIsDisplayed()
+        val mature = context.getString(R.string.mastery_mature)
+        compose.onNodeWithText("$mature 4").assertIsDisplayed()
+        val new = context.getString(R.string.mastery_new)
+        compose.onNodeWithText("$new 30").assertIsDisplayed()
+    }
+
+    @Test
+    fun `overview is hidden while searching`() {
+        show(VerbListUiState(query = "ска", verbs = verbs, isLoading = false, mastery = mastery))
+
+        compose.onNodeWithText(context.getString(R.string.mastery_title)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `only started verbs show their mastery`() {
+        show(VerbListUiState(verbs = verbs, isLoading = false, mastery = mastery))
+
+        compose.onNodeWithText("4/17").assertIsDisplayed()
+        compose.onNodeWithText("0/17").assertDoesNotExist()
+        val summary = context.resources.getQuantityString(R.plurals.mastery_summary, 17, 4, 17)
+        compose.onNodeWithContentDescription(summary).assertIsDisplayed()
     }
 
     @Test
