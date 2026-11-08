@@ -354,6 +354,27 @@ class TrainingViewModelTest {
     }
 
     @Test
+    fun `the infinitive of a choice can be heard before answering`() {
+        val vm = meaningViewModel(newCards = 1)
+
+        vm.onSpeak()
+
+        assertEquals(listOf("сказа́ть"), speaker.spoken)
+    }
+
+    @Test
+    fun `DE-RU is not spoken before it is graded`() {
+        val vm = meaningViewModel(newCards = 2)
+        vm.onOptionSelect(vm.choice().choice.correctIndex)
+        vm.onContinue()
+        speaker.spoken.clear()
+
+        vm.onSpeak()
+
+        assertEquals(emptyList<String>(), speaker.spoken)
+    }
+
+    @Test
     fun `auto play speaks the infinitive after a choice`() {
         val vm = meaningViewModel(
             newCards = 1,

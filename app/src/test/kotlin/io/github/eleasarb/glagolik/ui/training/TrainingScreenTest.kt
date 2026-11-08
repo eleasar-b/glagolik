@@ -1,12 +1,14 @@
 package io.github.eleasarb.glagolik.ui.training
 
 import android.content.Context
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasStateDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -274,6 +276,27 @@ class TrainingScreenTest {
         ).assertIsDisplayed().assertIsNotEnabled()
         compose.onNodeWithText("say, tell, speak, talk").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText(string(R.string.training_easy)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the speaker of a choice sits next to the infinitive, not at the translation`() {
+        var spoken = 0
+        show(
+            TrainingUiState.Question(
+                choiceCard,
+                position = 1,
+                total = 5,
+                feedback = AnswerResult.Correct("сказа́ть"),
+                chosenOption = 1,
+                canSpeak = true,
+            ),
+            onSpeak = { spoken++ },
+        )
+
+        // Only one speaker button: in the prompt, before the options and the feedback.
+        compose.onAllNodesWithContentDescription(string(R.string.speak)).assertCountEquals(1)
+        compose.onNodeWithContentDescription(string(R.string.speak)).performClick()
+        assertEquals(1, spoken)
     }
 
     @Test

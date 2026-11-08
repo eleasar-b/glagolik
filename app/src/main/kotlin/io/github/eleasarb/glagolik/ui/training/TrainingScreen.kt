@@ -172,7 +172,7 @@ private fun QuestionContent(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Prompt(card = state.card)
+            Prompt(card = state.card, onSpeak = onSpeak.takeIf { state.canSpeak })
             when (task) {
                 is MeaningChoiceTask -> ChoiceOptions(
                     task = task,
@@ -195,15 +195,17 @@ private fun QuestionContent(
             }
             val feedback = state.feedback
             if (feedback is AnswerResult.Correct || feedback is AnswerResult.Incorrect) {
+                // RU→DE: the answer is the translation; the speaker sits next to the
+                // Russian infinitive in the prompt instead.
+                val choice = task is MeaningChoiceTask
                 FeedbackCard(
                     feedback = feedback,
-                    // RU→DE: the infinitive is on screen already, the translation is the answer.
-                    answer = if (task is MeaningChoiceTask) {
+                    answer = if (choice) {
                         task.verb.translation.localized()
                     } else {
                         feedback.russianAnswer()
                     },
-                    onSpeak = onSpeak.takeIf { state.canSpeak },
+                    onSpeak = onSpeak.takeIf { state.canSpeak && !choice },
                 )
             }
             if (feedback is AnswerResult.Incorrect && task is ConjugationTask &&

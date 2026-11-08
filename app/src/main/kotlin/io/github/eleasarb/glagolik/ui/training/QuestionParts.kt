@@ -40,6 +40,8 @@ import io.github.eleasarb.glagolik.domain.usecase.ConjugationTask
 import io.github.eleasarb.glagolik.domain.usecase.MeaningChoiceTask
 import io.github.eleasarb.glagolik.domain.usecase.MeaningRecallTask
 import io.github.eleasarb.glagolik.domain.usecase.SessionCard
+import io.github.eleasarb.glagolik.ui.theme.correctContainerColor
+import io.github.eleasarb.glagolik.ui.theme.onCorrectContainerColor
 import io.github.eleasarb.glagolik.ui.verbs.labelRes
 import io.github.eleasarb.glagolik.ui.verbs.localized
 import io.github.eleasarb.glagolik.ui.verbs.pronounRes
@@ -50,9 +52,12 @@ import io.github.eleasarb.glagolik.ui.verbs.shortLabelRes
 private const val SEPARATOR = " · "
 private const val RUSSIAN = "ru"
 
-/** What is asked, by exercise; "new card" on top for cards never answered. */
+/**
+ * What is asked, by exercise; "new card" on top for cards never answered. [onSpeak] (`null`
+ * without a voice) speaks the infinitive of a multiple choice: it is the Russian word on screen.
+ */
 @Composable
-internal fun Prompt(card: SessionCard, modifier: Modifier = Modifier) {
+internal fun Prompt(card: SessionCard, onSpeak: (() -> Unit)?, modifier: Modifier = Modifier) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (card.isNew) {
             Text(
@@ -63,7 +68,7 @@ internal fun Prompt(card: SessionCard, modifier: Modifier = Modifier) {
         }
         when (val task = card.task) {
             is ConjugationTask -> ConjugationPrompt(task)
-            is MeaningChoiceTask -> ChoicePrompt(task.verb)
+            is MeaningChoiceTask -> ChoicePrompt(task.verb, onSpeak = onSpeak)
             is MeaningRecallTask -> RecallPrompt(task.verb)
         }
     }
@@ -96,9 +101,27 @@ private fun ConjugationPrompt(task: ConjugationTask, modifier: Modifier = Modifi
 
 /** RU→DE: the infinitive with its aspect; the options follow below. */
 @Composable
-private fun ChoicePrompt(verb: VerbSummary, modifier: Modifier = Modifier) {
+private fun ChoicePrompt(
+    verb: VerbSummary,
+    onSpeak: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(text = verb.infinitive, style = MaterialTheme.typography.headlineLarge)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = verb.infinitive,
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.weight(1f),
+            )
+            if (onSpeak != null) {
+                IconButton(onClick = onSpeak) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_volume_up),
+                        contentDescription = stringResource(R.string.speak),
+                    )
+                }
+            }
+        }
         Text(
             text = stringResource(verb.aspect.labelRes()),
             style = MaterialTheme.typography.bodyMedium,
@@ -157,9 +180,14 @@ internal fun ChoiceOptions(
                 else -> null
             }
             val container = when (marked) {
-                true -> MaterialTheme.colorScheme.primaryContainer
+                true -> correctContainerColor()
                 false -> MaterialTheme.colorScheme.errorContainer
                 null -> Color.Transparent
+            }
+            val content = when (marked) {
+                true -> onCorrectContainerColor()
+                false -> MaterialTheme.colorScheme.onErrorContainer
+                null -> MaterialTheme.colorScheme.onSurface
             }
             OutlinedButton(
                 onClick = { onOptionSelect(index) },
@@ -173,7 +201,7 @@ internal fun ChoiceOptions(
                     },
                 colors = ButtonDefaults.outlinedButtonColors(
                     disabledContainerColor = container,
-                    disabledContentColor = MaterialTheme.colorScheme.onSurface,
+                    disabledContentColor = content,
                 ),
             ) {
                 Text(
@@ -254,7 +282,10 @@ internal fun FeedbackCard(
 ) {
     val correct = feedback is AnswerResult.Correct
     val colors = if (correct) {
-        CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        CardDefaults.cardColors(
+            containerColor = correctContainerColor(),
+            contentColor = onCorrectContainerColor(),
+        )
     } else {
         CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
     }

@@ -177,15 +177,24 @@ class TrainingViewModel @Inject constructor(
         if (state.isGraded && autoPlayAudio) onSpeak()
     }
 
-    /** Speaks the correct form; only after the answer is graded, so it never gives it away. */
+    /**
+     * Speaks the Russian answer once it is graded, so it never gives it away. RU→DE shows the
+     * infinitive in the prompt, so it is spoken at any time.
+     */
     fun onSpeak() {
         val state = _uiState.value as? TrainingUiState.Question ?: return
-        val form = when (val feedback = state.feedback) {
-            is AnswerResult.Correct -> feedback.matched
-            is AnswerResult.Incorrect -> feedback.expected.firstOrNull()
-            else -> null
+        val task = state.card.task
+        val text = if (task is MeaningChoiceTask) {
+            // The infinitive is on screen from the start, so it can be heard any time.
+            task.verb.infinitive
+        } else {
+            when (val feedback = state.feedback) {
+                is AnswerResult.Correct -> feedback.matched
+                is AnswerResult.Incorrect -> feedback.expected.firstOrNull()
+                else -> null
+            }
         }
-        form?.let(speaker::speak)
+        text?.let(speaker::speak)
     }
 
     /** Loads the forms of the asked tense after a wrong conjugation answer. */
