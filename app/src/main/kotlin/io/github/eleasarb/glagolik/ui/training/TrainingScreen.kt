@@ -8,12 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -21,23 +17,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.intl.LocaleList
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -52,14 +41,12 @@ import io.github.eleasarb.glagolik.domain.model.TrainableForm
 import io.github.eleasarb.glagolik.domain.model.Translation
 import io.github.eleasarb.glagolik.domain.model.VerbSummary
 import io.github.eleasarb.glagolik.domain.usecase.ConjugationTask
+import io.github.eleasarb.glagolik.domain.usecase.MeaningChoice
+import io.github.eleasarb.glagolik.domain.usecase.MeaningChoiceTask
+import io.github.eleasarb.glagolik.domain.usecase.MeaningRecallTask
 import io.github.eleasarb.glagolik.domain.usecase.SessionCard
 import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
-import io.github.eleasarb.glagolik.ui.verbs.labelRes
 import io.github.eleasarb.glagolik.ui.verbs.localized
-import io.github.eleasarb.glagolik.ui.verbs.pronounRes
-
-private const val VARIANT_SEPARATOR = " · "
-private const val RUSSIAN = "ru"
 
 @Composable
 fun TrainingRoute(
@@ -75,11 +62,11 @@ fun TrainingRoute(
         onContinue = viewModel::onContinue,
         onClose = onClose,
         modifier = modifier,
+        onOptionSelect = viewModel::onOptionSelect,
         onSpeak = viewModel::onSpeak,
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrainingScreen(
     uiState: TrainingUiState,
@@ -88,30 +75,12 @@ fun TrainingScreen(
     onContinue: (easy: Boolean) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    onOptionSelect: (Int) -> Unit = {},
     onSpeak: () -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = {
-                    val title = if (uiState is TrainingUiState.Question) {
-                        stringResource(R.string.training_progress, uiState.position, uiState.total)
-                    } else {
-                        stringResource(R.string.training_title)
-                    }
-                    Text(title)
-                },
-                navigationIcon = {
-                    IconButton(onClick = onClose) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_close),
-                            contentDescription = stringResource(R.string.training_close),
-                        )
-                    }
-                },
-            )
-        },
+        topBar = { TrainingTopBar(uiState = uiState, onClose = onClose) },
     ) { innerPadding ->
         val contentModifier = Modifier
             .fillMaxSize()
@@ -144,6 +113,7 @@ fun TrainingScreen(
                 state = uiState,
                 onInputChange = onInputChange,
                 onSubmit = onSubmit,
+                onOptionSelect = onOptionSelect,
                 onContinue = onContinue,
                 onSpeak = onSpeak,
                 modifier = contentModifier,
@@ -152,19 +122,45 @@ fun TrainingScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TrainingTopBar(
+    uiState: TrainingUiState,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    TopAppBar(
+        modifier = modifier,
+        title = {
+            val title = if (uiState is TrainingUiState.Question) {
+                stringResource(R.string.training_progress, uiState.position, uiState.total)
+            } else {
+                stringResource(R.string.training_title)
+            }
+            Text(title)
+        },
+        navigationIcon = {
+            IconButton(onClick = onClose) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_close),
+                    contentDescription = stringResource(R.string.training_close),
+                )
+            }
+        },
+    )
+}
+
 @Composable
 private fun QuestionContent(
     state: TrainingUiState.Question,
     onInputChange: (String) -> Unit,
     onSubmit: () -> Unit,
+    onOptionSelect: (Int) -> Unit,
     onContinue: (easy: Boolean) -> Unit,
     onSpeak: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(state.position) {
-        if (!state.isGraded) focusRequester.requestFocus()
-    }
+    val task = state.card.task
     Column(modifier = modifier) {
         LinearProgressIndicator(
             progress = { (state.position - 1).toFloat() / state.total },
@@ -177,141 +173,49 @@ private fun QuestionContent(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Prompt(card = state.card)
-            OutlinedTextField(
-                value = state.input,
-                onValueChange = onInputChange,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester),
-                readOnly = state.isGraded,
-                singleLine = true,
-                label = { Text(stringResource(R.string.training_answer_label)) },
-                isError = state.feedback is AnswerResult.LatinLetters,
-                supportingText = inputHint(state.feedback)?.let { hint -> { Text(hint) } },
-                keyboardOptions = KeyboardOptions(
-                    imeAction = ImeAction.Done,
-                    hintLocales = LocaleList(RUSSIAN),
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = { if (state.isGraded) onContinue(false) else onSubmit() },
-                ),
-            )
+            when (task) {
+                is MeaningChoiceTask -> ChoiceOptions(
+                    task = task,
+                    chosen = state.chosenOption,
+                    isGraded = state.isGraded,
+                    onOptionSelect = onOptionSelect,
+                )
+
+                is ConjugationTask, is MeaningRecallTask -> AnswerField(
+                    state = state,
+                    label = if (task is MeaningRecallTask) {
+                        stringResource(R.string.training_infinitive_label)
+                    } else {
+                        stringResource(R.string.training_answer_label)
+                    },
+                    onInputChange = onInputChange,
+                    onSubmit = onSubmit,
+                    onContinue = onContinue,
+                )
+            }
             val feedback = state.feedback
             if (feedback is AnswerResult.Correct || feedback is AnswerResult.Incorrect) {
                 FeedbackCard(
                     feedback = feedback,
+                    // RU→DE: the infinitive is on screen already, the translation is the answer.
+                    answer = if (task is MeaningChoiceTask) {
+                        task.verb.translation.localized()
+                    } else {
+                        feedback.russianAnswer()
+                    },
                     onSpeak = onSpeak.takeIf { state.canSpeak },
                 )
             }
-            if (feedback is AnswerResult.Incorrect && state.tenseForms.isNotEmpty()) {
+            if (feedback is AnswerResult.Incorrect && task is ConjugationTask &&
+                state.tenseForms.isNotEmpty()
+            ) {
                 TenseFormsCard(
-                    tense = state.card.form.form.tense,
+                    tense = task.form.form.tense,
                     forms = state.tenseForms,
-                    asked = state.card.form.form,
+                    asked = task.form.form,
                 )
             }
             Actions(state = state, onSubmit = onSubmit, onContinue = onContinue)
-        }
-    }
-}
-
-@Composable
-private fun Prompt(card: SessionCard, modifier: Modifier = Modifier) {
-    val verb = card.form.verb
-    val form = card.form.form
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        if (card.isNew) {
-            Text(
-                text = stringResource(R.string.training_new_form),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.tertiary,
-            )
-        }
-        Text(text = verb.infinitive, style = MaterialTheme.typography.headlineLarge)
-        Text(
-            text = stringResource(verb.aspect.labelRes()) + VARIANT_SEPARATOR +
-                verb.translation.localized(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = stringResource(form.tense.labelRes()),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-        Text(
-            text = stringResource(R.string.training_prompt, stringResource(form.pronounRes())),
-            style = MaterialTheme.typography.headlineSmall,
-        )
-    }
-}
-
-@Composable
-private fun inputHint(feedback: AnswerResult?): String? = when (feedback) {
-    is AnswerResult.LatinLetters -> stringResource(
-        R.string.training_latin_letters,
-        feedback.letters.joinToString(" "),
-    )
-
-    AnswerResult.Empty -> stringResource(R.string.training_empty_answer)
-
-    else -> null
-}
-
-/** [onSpeak] is `null` when no voice is available; then no speaker button is shown. */
-@Composable
-private fun FeedbackCard(
-    feedback: AnswerResult,
-    onSpeak: (() -> Unit)?,
-    modifier: Modifier = Modifier,
-) {
-    val correct = feedback is AnswerResult.Correct
-    val colors = if (correct) {
-        CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-    } else {
-        CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-    }
-    val (headline, answer, yoHint) = when (feedback) {
-        is AnswerResult.Correct -> Triple(
-            stringResource(R.string.training_correct),
-            feedback.matched,
-            feedback.yoTypedAsYe,
-        )
-
-        is AnswerResult.Incorrect -> Triple(
-            stringResource(R.string.training_incorrect),
-            feedback.expected.joinToString(VARIANT_SEPARATOR),
-            feedback.yoTypedAsYe,
-        )
-
-        else -> return
-    }
-    Card(modifier = modifier.fillMaxWidth(), colors = colors) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = headline, style = MaterialTheme.typography.titleMedium)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = answer,
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.weight(1f),
-                )
-                if (onSpeak != null) {
-                    IconButton(onClick = onSpeak) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_volume_up),
-                            contentDescription = stringResource(R.string.speak),
-                        )
-                    }
-                }
-            }
-            if (yoHint) {
-                Text(
-                    text = stringResource(R.string.training_yo_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
         }
     }
 }
@@ -328,6 +232,9 @@ private fun Actions(
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
     ) {
         when {
+            // Multiple choice is graded by choosing an option.
+            !state.isGraded && state.card.task is MeaningChoiceTask -> Unit
+
             !state.isGraded -> Button(onClick = onSubmit) {
                 Text(stringResource(R.string.training_check))
             }
@@ -429,6 +336,57 @@ private fun TrainingScreenIncorrectPreview() {
                 feedback = AnswerResult.Incorrect(listOf("ска́жешь")),
                 tenseForms = forms,
                 canSpeak = true,
+            ),
+            onInputChange = {},
+            onSubmit = {},
+            onContinue = {},
+            onClose = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TrainingScreenChoicePreview() {
+    val options = listOf(
+        VerbSummary(5, "есть", Aspect.IMPERFECTIVE, Translation("essen, fressen", "eat")),
+        VerbSummary(2, "сказа́ть", Aspect.PERFECTIVE, Translation("sagen, mitteilen", "say")),
+        VerbSummary(13, "жить", Aspect.IMPERFECTIVE, Translation("leben, wohnen", "live")),
+        VerbSummary(36, "ждать", Aspect.IMPERFECTIVE, Translation("warten, erwarten", "wait")),
+    )
+    GlagolikTheme(dynamicColor = false) {
+        TrainingScreen(
+            uiState = TrainingUiState.Question(
+                card = SessionCard(
+                    task = MeaningChoiceTask(options[1], MeaningChoice(options, correctIndex = 1)),
+                    isNew = true,
+                ),
+                position = 1,
+                total = 20,
+                feedback = AnswerResult.Incorrect(listOf("сказа́ть")),
+                chosenOption = 3,
+                canSpeak = true,
+            ),
+            onInputChange = {},
+            onSubmit = {},
+            onContinue = {},
+            onClose = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TrainingScreenRecallPreview() {
+    val verb = VerbSummary(2, "сказа́ть", Aspect.PERFECTIVE, Translation("sagen, mitteilen", "say"))
+    GlagolikTheme(dynamicColor = false) {
+        TrainingScreen(
+            uiState = TrainingUiState.Question(
+                card = SessionCard(task = MeaningRecallTask(verb), isNew = false),
+                position = 4,
+                total = 20,
+                input = "сообщить",
+                feedback = AnswerResult.OtherAnswer("сообщи́ть"),
             ),
             onInputChange = {},
             onSubmit = {},

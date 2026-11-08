@@ -246,12 +246,13 @@ private fun VerbListScreenPreview() {
                 ),
                 isLoading = false,
                 mastery = MasteryOverview(
-                    total = MasteryCounts(new = 22, learning = 2, young = 4, mature = 4),
+                    forms = MasteryCounts(new = 22, learning = 2, young = 4, mature = 4),
                     byVerb = mapOf(
                         1 to MasteryCounts(new = 9, learning = 1, young = 3, mature = 4),
                         2 to MasteryCounts(new = 13, learning = 1, young = 1),
                     ),
                     dueNow = 3,
+                    meaning = MasteryCounts(new = 2, young = 1, mature = 1),
                 ),
             ),
             onQueryChange = {},

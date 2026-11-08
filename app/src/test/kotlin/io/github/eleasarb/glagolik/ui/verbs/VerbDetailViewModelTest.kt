@@ -2,7 +2,9 @@ package io.github.eleasarb.glagolik.ui.verbs
 
 import androidx.lifecycle.SavedStateHandle
 import io.github.eleasarb.glagolik.data.tts.SpeechAvailability
+import io.github.eleasarb.glagolik.domain.model.CardKey
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
+import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.MasteryLevel
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
@@ -40,7 +42,17 @@ class VerbDetailViewModelTest {
     )
     private val progress = FakeProgressRepository()
     private val speaker = FakeSpeaker(SpeechAvailability.INITIALIZING)
-    private val repository = FakeVerbRepository(verbs = emptyList(), details = mapOf(2 to detail))
+    private val translated = detail.copy(
+        summary = verbSummary(4, "сказа́ть", german = "sagen", english = "say"),
+    )
+    private val reference = translated.copy(
+        summary = translated.summary.copy(id = 8),
+        isCore = false,
+    )
+    private val repository = FakeVerbRepository(
+        verbs = emptyList(),
+        details = mapOf(2 to detail, 4 to translated, 8 to reference),
+    )
 
     @Test
     fun `known id gives success`() = runTest {
@@ -74,6 +86,33 @@ class VerbDetailViewModelTest {
         assertEquals(MasteryLevel.YOUNG, state.mastery[FormKey.PAST_M])
         assertEquals(MasteryLevel.NEW, state.mastery[FormKey.FUTURE_SG1])
         assertEquals(1, state.masteryCounts.young)
+    }
+
+    @Test
+    fun `core verbs with translations have both meaning levels`() = runTest {
+        progress.recordReview(CardKey(4, Exercise.MeaningRuDe), Rating.EASY, NOW)
+        val viewModel = viewModelFor(4)
+        verbDetailViewModelCollected(viewModel)
+
+        val state = viewModel.uiState.value as VerbDetailUiState.Success
+        assertEquals(
+            mapOf(
+                Exercise.MeaningRuDe to MasteryLevel.YOUNG,
+                Exercise.MeaningDeRu to MasteryLevel.NEW,
+            ),
+            state.meaning,
+        )
+    }
+
+    @Test
+    fun `reference verbs and verbs without translation have no meaning levels`() = runTest {
+        listOf(2, 8).forEach { id ->
+            val viewModel = viewModelFor(id)
+            verbDetailViewModelCollected(viewModel)
+
+            val state = viewModel.uiState.value as VerbDetailUiState.Success
+            assertEquals(emptyMap<Exercise, MasteryLevel>(), state.meaning)
+        }
     }
 
     @Test

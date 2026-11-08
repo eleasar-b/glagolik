@@ -1,5 +1,6 @@
 package io.github.eleasarb.glagolik.ui.components
 
+import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -71,12 +72,17 @@ fun MasteryLevel.color(): Color {
 
 /**
  * Stacked bar of [counts], strongest level first, with a small gap between the levels.
- * Announced as "x of y forms mature".
+ * Announced with [summary], "x of y forms mature" by default.
  */
 @Composable
-fun MasteryBar(counts: MasteryCounts, modifier: Modifier = Modifier, height: Dp = 6.dp) {
+fun MasteryBar(
+    counts: MasteryCounts,
+    modifier: Modifier = Modifier,
+    height: Dp = 6.dp,
+    @PluralsRes summary: Int = R.plurals.mastery_summary,
+) {
     val description = pluralStringResource(
-        R.plurals.mastery_summary,
+        summary,
         counts.total,
         counts.mature,
         counts.total,

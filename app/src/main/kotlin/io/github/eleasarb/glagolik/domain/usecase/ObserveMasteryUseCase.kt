@@ -3,6 +3,7 @@ package io.github.eleasarb.glagolik.domain.usecase
 import io.github.eleasarb.glagolik.data.repository.ProgressRepository
 import io.github.eleasarb.glagolik.data.repository.VerbRepository
 import io.github.eleasarb.glagolik.domain.model.CardKey
+import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.model.MasteryOverview
 import io.github.eleasarb.glagolik.domain.model.masteryLevel
@@ -19,10 +20,12 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.transformLatest
 
 /**
- * Mastery of every trainable form of the core verbs, updated after each answer.
+ * Mastery of every trainable card of the core verbs, updated after each answer: forms (in
+ * total and per verb) and meaning (both directions, in total).
  *
- * All trainable forms count, independent of the tenses selected for training. Forms marked
- * NO_TRAINING and cards of forms that are no longer trainable are ignored.
+ * All trainable forms count, independent of the tenses selected for training; meaning cards
+ * count independent of the meaning setting. Forms marked NO_TRAINING and cards that are no
+ * longer trainable are ignored.
  *
  * [MasteryOverview.dueNow] also changes without an answer: the flow emits again whenever the
  * next card becomes due, so a waiting screen stays current.
@@ -34,10 +37,15 @@ class ObserveMasteryUseCase @Inject constructor(
 ) {
     @OptIn(ExperimentalCoroutinesApi::class)
     operator fun invoke(): Flow<MasteryOverview> {
-        val trainable = flow { emit(verbs.getTrainableForms().map { it.key }) }
+        val trainable = flow {
+            val meaning = MeaningCatalog(verbs.getCoreVerbs()).verbs.flatMap { verb ->
+                Exercise.MEANINGS.map { CardKey(verb.id, it) }
+            }
+            emit(TrainableCards(forms = verbs.getTrainableForms().map { it.key }, meaning))
+        }
         return combine(trainable, progress.observeCards(), ::Snapshot)
             .transformLatest { (refs, cards) ->
-                val dues = refs.mapNotNull { cards[it]?.due }
+                val dues = (refs.forms + refs.meaning).mapNotNull { cards[it]?.due }
                 while (true) {
                     val now = clock.instant()
                     emit(overview(refs, cards, now))
@@ -48,20 +56,24 @@ class ObserveMasteryUseCase @Inject constructor(
             }
     }
 
-    private data class Snapshot(val refs: List<CardKey>, val cards: Map<CardKey, SrsCard>)
+    private data class Snapshot(val refs: TrainableCards, val cards: Map<CardKey, SrsCard>)
 }
 
+/** Keys of all cards that count for the overview. */
+internal data class TrainableCards(val forms: List<CardKey>, val meaning: List<CardKey>)
+
 internal fun overview(
-    refs: List<CardKey>,
+    refs: TrainableCards,
     cards: Map<CardKey, SrsCard>,
     now: Instant,
 ): MasteryOverview {
-    val byVerb = refs.groupBy { it.verbId }.mapValues { (_, verbRefs) ->
-        MasteryCounts.of(verbRefs.map { cards[it].masteryLevel() })
-    }
+    fun counts(keys: List<CardKey>) = MasteryCounts.of(keys.map { cards[it].masteryLevel() })
     return MasteryOverview(
-        total = MasteryCounts.of(refs.map { cards[it].masteryLevel() }),
-        byVerb = byVerb,
-        dueNow = refs.count { ref -> cards[ref]?.let { !it.due.isAfter(now) } ?: false },
+        forms = counts(refs.forms),
+        byVerb = refs.forms.groupBy { it.verbId }.mapValues { (_, keys) -> counts(keys) },
+        dueNow = (refs.forms + refs.meaning).count { key ->
+            cards[key]?.let { !it.due.isAfter(now) } ?: false
+        },
+        meaning = counts(refs.meaning),
     )
 }

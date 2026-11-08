@@ -1,5 +1,6 @@
 package io.github.eleasarb.glagolik.ui.verbs
 
+import androidx.annotation.PluralsRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -26,7 +27,10 @@ import io.github.eleasarb.glagolik.ui.components.MasteryDot
 import io.github.eleasarb.glagolik.ui.components.labelRes
 import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
 
-/** Mastery of all trainable forms, shown above the verb list. */
+/**
+ * Mastery of all trainable cards, shown above the verb list: one bar for the forms and one for
+ * the meaning (both directions), each with "mature/total".
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MasteryOverviewCard(overview: MasteryOverview, modifier: Modifier = Modifier) {
@@ -47,15 +51,18 @@ fun MasteryOverviewCard(overview: MasteryOverview, modifier: Modifier = Modifier
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
-            MasteryBar(
-                counts = overview.total,
-                modifier = Modifier.fillMaxWidth(),
-                height = 10.dp,
+            KindMastery(
+                label = stringResource(R.string.mastery_forms),
+                counts = overview.forms,
+                summary = R.plurals.mastery_summary,
+            )
+            KindMastery(
+                label = stringResource(R.string.mastery_meaning),
+                counts = overview.meaning,
+                summary = R.plurals.mastery_summary_cards,
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                MASTERY_DISPLAY_ORDER.forEach { level ->
-                    LegendItem(level = level, count = overview.total[level])
-                }
+                MASTERY_DISPLAY_ORDER.forEach { level -> LegendItem(level = level) }
             }
             Text(
                 text = stringResource(R.string.mastery_explanation),
@@ -66,18 +73,44 @@ fun MasteryOverviewCard(overview: MasteryOverview, modifier: Modifier = Modifier
     }
 }
 
+/** Label with "mature/total" above the bar of one exercise kind. */
 @Composable
-private fun LegendItem(level: MasteryLevel, count: Int, modifier: Modifier = Modifier) {
+private fun KindMastery(
+    label: String,
+    counts: MasteryCounts,
+    @PluralsRes summary: Int,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = stringResource(R.string.mastery_fraction, counts.mature, counts.total),
+                style = MaterialTheme.typography.labelMedium,
+            )
+        }
+        MasteryBar(
+            counts = counts,
+            modifier = Modifier.fillMaxWidth(),
+            height = 10.dp,
+            summary = summary,
+        )
+    }
+}
+
+@Composable
+private fun LegendItem(level: MasteryLevel, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         MasteryDot(level = level)
-        Text(
-            text = stringResource(R.string.mastery_legend, stringResource(level.labelRes()), count),
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        Text(text = stringResource(level.labelRes()), style = MaterialTheme.typography.bodyMedium)
     }
 }
 
@@ -87,9 +120,10 @@ private fun MasteryOverviewCardPreview() {
     GlagolikTheme(dynamicColor = false) {
         MasteryOverviewCard(
             overview = MasteryOverview(
-                total = MasteryCounts(new = 9_412, learning = 23, young = 310, mature = 128),
+                forms = MasteryCounts(new = 9_412, learning = 23, young = 310, mature = 128),
                 byVerb = emptyMap(),
                 dueNow = 17,
+                meaning = MasteryCounts(new = 1_080, learning = 12, young = 60, mature = 48),
             ),
         )
     }

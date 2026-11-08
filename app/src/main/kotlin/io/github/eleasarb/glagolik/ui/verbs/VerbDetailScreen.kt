@@ -39,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.eleasarb.glagolik.R
 import io.github.eleasarb.glagolik.domain.model.Aspect
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
+import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.model.MasteryLevel
@@ -116,6 +117,7 @@ fun VerbDetailScreen(
             is VerbDetailUiState.Success -> VerbDetailContent(
                 verb = uiState.verb,
                 mastery = uiState.mastery,
+                meaning = uiState.meaning,
                 masteryCounts = uiState.masteryCounts,
                 onPartnerClick = onPartnerClick,
                 onSpeak = onSpeak.takeIf { uiState.canSpeak },
@@ -129,6 +131,7 @@ fun VerbDetailScreen(
 private fun VerbDetailContent(
     verb: VerbDetail,
     mastery: Map<FormKey, MasteryLevel>,
+    meaning: Map<Exercise, MasteryLevel>,
     masteryCounts: MasteryCounts,
     onPartnerClick: (Int) -> Unit,
     onSpeak: ((String) -> Unit)?,
@@ -140,7 +143,7 @@ private fun VerbDetailContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        VerbHeader(summary = verb.summary, onSpeak = onSpeak)
+        VerbHeader(summary = verb.summary, meaning = meaning, onSpeak = onSpeak)
         if (masteryCounts.total > 0) VerbMasterySummary(counts = masteryCounts)
         if (verb.partners.isNotEmpty()) {
             PartnerChips(partners = verb.partners, onPartnerClick = onPartnerClick)
@@ -157,6 +160,7 @@ private fun VerbDetailContent(
 @Composable
 private fun VerbHeader(
     summary: VerbSummary,
+    meaning: Map<Exercise, MasteryLevel>,
     onSpeak: ((String) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
@@ -177,11 +181,39 @@ private fun VerbHeader(
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
         )
-        Text(
-            text = summary.translation.localized(),
-            style = MaterialTheme.typography.bodyLarge,
+        Row(
             modifier = Modifier.padding(top = 4.dp),
-        )
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = summary.translation.localized(),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            MeaningDots(meaning = meaning, modifier = Modifier.padding(start = 8.dp))
+        }
+    }
+}
+
+/** One dot per meaning direction (RU→DE, then DE→RU), each announced with its level. */
+@Composable
+private fun MeaningDots(meaning: Map<Exercise, MasteryLevel>, modifier: Modifier = Modifier) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Exercise.MEANINGS.forEach { exercise ->
+            val level = meaning[exercise] ?: return@forEach
+            val description = stringResource(
+                if (exercise == Exercise.MeaningRuDe) {
+                    R.string.verb_meaning_ru_de
+                } else {
+                    R.string.verb_meaning_de_ru
+                },
+                stringResource(level.labelRes()),
+            )
+            MasteryDot(
+                level = level,
+                modifier = Modifier.semantics { contentDescription = description },
+            )
+        }
     }
 }
 
@@ -345,6 +377,10 @@ private fun VerbDetailScreenPreview() {
                     FormKey.FUTURE_SG2 to MasteryLevel.YOUNG,
                     FormKey.PAST_M to MasteryLevel.LEARNING,
                     FormKey.IMPERATIVE_SG to MasteryLevel.NEW,
+                ),
+                meaning = mapOf(
+                    Exercise.MeaningRuDe to MasteryLevel.YOUNG,
+                    Exercise.MeaningDeRu to MasteryLevel.LEARNING,
                 ),
                 canSpeak = true,
             ),

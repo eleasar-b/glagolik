@@ -4,19 +4,18 @@ import io.github.eleasarb.glagolik.domain.model.ComparableMeanings
 import io.github.eleasarb.glagolik.domain.model.CoreVerb
 import io.github.eleasarb.glagolik.domain.model.VerbSummary
 import io.github.eleasarb.glagolik.domain.model.comparableMeanings
+import io.github.eleasarb.glagolik.domain.model.hasMeaningCards
 import kotlin.random.Random
 
 /**
  * Meaning exercises of the core verbs: which verbs take part, distractors for the multiple
  * choice and other verbs that also fit a typed answer.
  *
- * A verb takes part if it has a German and an English translation. Two verbs "share a meaning"
+ * A verb takes part if it has a German and an English translation (hasMeaningCards). Two verbs "share a meaning"
  * if one of their meanings is the same in German or in English (see [ComparableMeanings]).
  */
 class MeaningCatalog(verbs: List<CoreVerb>) {
-    private val eligible: List<CoreVerb> = verbs.filter { verb ->
-        verb.summary.translation.let { it.german.isNotBlank() && it.english.isNotBlank() }
-    }
+    private val eligible: List<CoreVerb> = verbs.filter { it.summary.hasMeaningCards() }
     private val byId: Map<Int, CoreVerb> = eligible.associateBy { it.summary.id }
     private val meanings: Map<Int, ComparableMeanings> =
         eligible.associate { it.summary.id to it.summary.translation.comparableMeanings() }

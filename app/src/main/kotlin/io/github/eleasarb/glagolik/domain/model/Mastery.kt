@@ -63,10 +63,14 @@ data class MasteryCounts(
     }
 }
 
-/** Mastery of all trainable forms of the core verbs. */
+/** Mastery of all trainable cards of the core verbs. */
 data class MasteryOverview(
-    val total: MasteryCounts,
+    /** All trainable forms. */
+    val forms: MasteryCounts,
+    /** Forms per verb. */
     val byVerb: Map<Int, MasteryCounts>,
-    /** Forms due at the time the overview was computed. */
+    /** Cards (forms and meaning) due at the time the overview was computed. */
     val dueNow: Int,
+    /** Both meaning directions of every verb that takes part. */
+    val meaning: MasteryCounts = MasteryCounts(),
 )

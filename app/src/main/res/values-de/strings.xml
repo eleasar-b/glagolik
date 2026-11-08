@@ -8,6 +8,9 @@
     <string name="aspect_imperfective">imperfektiv</string>
     <string name="aspect_perfective">perfektiv</string>
     <string name="aspect_biaspectual">zweiaspektig</string>
+    <string name="aspect_short_imperfective">ipf.</string>
+    <string name="aspect_short_perfective">pf.</string>
+    <string name="aspect_short_biaspectual">ipf./pf.</string>
     <string name="aspect_partners">Aspektpartner</string>
     <string name="partner_chip">%1$s (%2$s)</string>
 
@@ -22,12 +25,20 @@
     <string name="mastery_learning">Lernen</string>
     <string name="mastery_young">Jung</string>
     <string name="mastery_mature">Gefestigt</string>
+    <string name="mastery_forms">Formen</string>
+    <string name="mastery_meaning">Bedeutung</string>
     <string name="mastery_due">Jetzt fällig: %1$d</string>
     <string name="mastery_explanation">Gefestigt: Die nächste Wiederholung ist mindestens drei Wochen entfernt.</string>
     <plurals name="mastery_summary">
         <item quantity="one">%1$d von %2$d Form gefestigt</item>
         <item quantity="other">%1$d von %2$d Formen gefestigt</item>
     </plurals>
+    <plurals name="mastery_summary_cards">
+        <item quantity="one">%1$d von %2$d Karte gefestigt</item>
+        <item quantity="other">%1$d von %2$d Karten gefestigt</item>
+    </plurals>
+    <string name="verb_meaning_ru_de">Bedeutung RU→DE: %1$s</string>
+    <string name="verb_meaning_de_ru">Bedeutung DE→RU: %1$s</string>
 
     <string name="about_title">Info</string>
     <string name="about_version">Glagolik %1$s</string>
@@ -39,12 +50,17 @@
     <string name="training_progress">%1$d / %2$d</string>
     <string name="training_start">Training starten</string>
     <string name="training_close">Training beenden</string>
-    <string name="training_new_form">Neue Form</string>
+    <string name="training_new_card">Neue Karte</string>
+    <string name="training_choice_prompt">Was bedeutet das?</string>
+    <string name="training_recall_prompt">Wie lautet das Verb auf Russisch?</string>
+    <string name="training_infinitive_label">Infinitiv</string>
+    <string name="training_other_verb">Auch passend, gesucht ist ein anderes Verb. Versuch es nochmals.</string>
     <string name="training_prompt">%1$s …</string>
     <string name="training_answer_label">Deine Antwort</string>
     <string name="training_check">Prüfen</string>
     <string name="training_continue">Weiter</string>
     <string name="training_easy">Leicht</string>
+    <string name="training_option_wrong">Falsch</string>
     <string name="training_correct">Richtig</string>
     <string name="training_incorrect">Nicht ganz. Richtig ist:</string>
     <string name="training_yo_hint">Hinweis: wird mit ё geschrieben.</string>
@@ -53,12 +69,12 @@
     <string name="training_latin_letters">Lateinische Buchstaben in deiner Antwort: %1$s. Bitte die russische Tastatur verwenden.</string>
     <string name="training_empty_answer">Bitte gib eine Antwort ein.</string>
     <string name="training_nothing_title">Für heute ist alles erledigt</string>
-    <string name="training_nothing_text">Keine Formen sind fällig. In den Einstellungen kannst du mehr neue Formen pro Tag erlauben.</string>
+    <string name="training_nothing_text">Keine Karten sind fällig. In den Einstellungen kannst du mehr neue Karten pro Tag erlauben.</string>
     <string name="training_finished_title">Session abgeschlossen</string>
     <string name="training_done">Fertig</string>
 
     <string name="settings_title">Einstellungen</string>
-    <string name="settings_new_forms">Neue Formen pro Tag</string>
+    <string name="settings_new_cards">Neue Karten pro Tag</string>
     <string name="settings_session_size">Karten pro Session</string>
     <string name="settings_strict_yo">Strenges ё</string>
     <string name="settings_strict_yo_summary">е statt ё als falsch werten</string>
@@ -72,13 +88,15 @@
     <string name="settings_speech_install">Russische Stimme herunterladen</string>
     <string name="settings_speech_test">Testen</string>
     <string name="settings_speech_open">Sprachausgabe-Einstellungen</string>
+    <string name="settings_practice_meaning">Bedeutung üben</string>
+    <string name="settings_practice_meaning_summary">Übersetzung wählen (RU→DE) und Infinitiv tippen (DE→RU), gemischt mit den Formen.</string>
     <string name="settings_tenses">Abgefragte Zeitformen</string>
     <string name="settings_tenses_hint">Mindestens eine Zeitform bleibt ausgewählt.</string>
     <string name="settings_decrease">Verringern</string>
     <string name="settings_increase">Erhöhen</string>
     <plurals name="training_finished_text">
-        <item quantity="one">%1$d von %2$d Form beim ersten Versuch richtig.</item>
-        <item quantity="other">%1$d von %2$d Formen beim ersten Versuch richtig.</item>
+        <item quantity="one">%1$d von %2$d Karte beim ersten Versuch richtig.</item>
+        <item quantity="other">%1$d von %2$d Karten beim ersten Versuch richtig.</item>
     </plurals>
     <string name="backup_title">Datensicherung</string>
     <string name="backup_text">Exportiere Fortschritt und Einstellungen in eine Datei deiner Wahl (Ordner, USB-Stick, Cloud-App). Der Import ersetzt den aktuellen Fortschritt.</string>
@@ -86,12 +104,12 @@
     <string name="backup_import">Importieren</string>
     <string name="backup_working">Wird ausgeführt…</string>
     <plurals name="backup_exported">
-        <item quantity="one">Exportiert: %1$d Form.</item>
-        <item quantity="other">Exportiert: %1$d Formen.</item>
+        <item quantity="one">Exportiert: %1$d Karte.</item>
+        <item quantity="other">Exportiert: %1$d Karten.</item>
     </plurals>
     <plurals name="backup_imported">
-        <item quantity="one">Importiert: %1$d Form.</item>
-        <item quantity="other">Importiert: %1$d Formen.</item>
+        <item quantity="one">Importiert: %1$d Karte.</item>
+        <item quantity="other">Importiert: %1$d Karten.</item>
     </plurals>
     <string name="backup_invalid_file">Das ist kein gültiger Glagolik-Export. Es wurde nichts geändert.</string>
     <string name="backup_failed">Die Datei konnte nicht gelesen oder geschrieben werden.</string>

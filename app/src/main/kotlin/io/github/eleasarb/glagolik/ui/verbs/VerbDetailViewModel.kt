@@ -14,6 +14,7 @@ import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.model.MasteryLevel
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
+import io.github.eleasarb.glagolik.domain.model.hasMeaningCards
 import io.github.eleasarb.glagolik.domain.model.masteryLevel
 import io.github.eleasarb.glagolik.ui.navigation.VERB_ID_ARG
 import javax.inject.Inject
@@ -33,6 +34,11 @@ sealed interface VerbDetailUiState {
         val verb: VerbDetail,
         /** Level of every trainable form; forms marked NO_TRAINING have no entry. */
         val mastery: Map<FormKey, MasteryLevel> = emptyMap(),
+        /**
+         * Level of the meaning cards (RU→DE, DE→RU); empty for verbs without meaning cards
+         * (reference verbs, missing translation).
+         */
+        val meaning: Map<Exercise, MasteryLevel> = emptyMap(),
         /** A Russian voice is available; infinitive and forms can be spoken. */
         val canSpeak: Boolean = false,
     ) : VerbDetailUiState {
@@ -64,6 +70,11 @@ class VerbDetailViewModel @Inject constructor(
                 mastery = verb.forms
                     .filter { it.isTrainable }
                     .associate { it.key to cards[Exercise.Form(it.key)].masteryLevel() },
+                meaning = if (verb.isCore && verb.summary.hasMeaningCards()) {
+                    Exercise.MEANINGS.associateWith { cards[it].masteryLevel() }
+                } else {
+                    emptyMap()
+                },
                 canSpeak = availability == SpeechAvailability.READY,
             )
         }

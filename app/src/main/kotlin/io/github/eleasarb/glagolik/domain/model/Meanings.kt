@@ -45,6 +45,10 @@ fun previewMeanings(translation: String, maxLength: Int = PREVIEW_MAX_LENGTH): S
     }
 }
 
+/** Meaning cards need a translation in both languages (German or English is shown). */
+fun VerbSummary.hasMeaningCards(): Boolean =
+    translation.german.isNotBlank() && translation.english.isNotBlank()
+
 /**
  * Meanings of a translation, normalised for comparison (lower case, single spaces). German and
  * English are kept apart: a German word never matches an English one.

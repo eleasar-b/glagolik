@@ -15,6 +15,7 @@ import androidx.test.core.app.ApplicationProvider
 import io.github.eleasarb.glagolik.R
 import io.github.eleasarb.glagolik.domain.model.Aspect
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
+import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.MasteryLevel
 import io.github.eleasarb.glagolik.domain.model.Translation
@@ -75,6 +76,35 @@ class VerbDetailScreenTest {
             .assertExists()
         compose.onNodeWithContentDescription(context.getString(R.string.mastery_learning))
             .assertExists()
+    }
+
+    @Test
+    fun `two dots next to the translation show the meaning levels`() {
+        show(
+            VerbDetailUiState.Success(
+                verb = podnyat,
+                meaning = mapOf(
+                    Exercise.MeaningRuDe to MasteryLevel.YOUNG,
+                    Exercise.MeaningDeRu to MasteryLevel.NEW,
+                ),
+            ),
+        )
+
+        val young = string(R.string.mastery_young)
+        val new = string(R.string.mastery_new)
+        compose.onNodeWithContentDescription(context.getString(R.string.verb_meaning_ru_de, young))
+            .assertIsDisplayed()
+        compose.onNodeWithContentDescription(context.getString(R.string.verb_meaning_de_ru, new))
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun `no meaning dots without meaning levels`() {
+        show(VerbDetailUiState.Success(verb = podnyat))
+
+        val new = string(R.string.mastery_new)
+        compose.onNodeWithContentDescription(context.getString(R.string.verb_meaning_ru_de, new))
+            .assertDoesNotExist()
     }
 
     @Test

@@ -52,6 +52,8 @@ data class VerbDetail(
     val summary: VerbSummary,
     val forms: List<ConjugatedForm>,
     val partners: List<VerbSummary>,
+    /** One of the trained verbs; aspect partners outside of them are reference verbs. */
+    val isCore: Boolean = true,
 ) {
     fun formsOf(tense: Tense): List<ConjugatedForm> = forms.filter { it.key.tense == tense }
 }
