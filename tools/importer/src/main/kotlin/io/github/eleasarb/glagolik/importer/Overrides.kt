@@ -10,7 +10,10 @@ enum class OverrideAction {
     /** The listed fields are legitimately empty (e.g. impersonal verbs). */
     ALLOW_MISSING,
 
-    /** Replace one field with a corrected value (source notation). Human-reviewed only. */
+    /**
+     * Replace one form field (source notation) or one translation with a corrected value.
+     * Human-reviewed only.
+     */
     SET,
 
     /**
@@ -26,7 +29,13 @@ data class Override(
     val fields: List<SourceField>,
     val value: String,
     val reason: String,
-)
+    /** Translation replaced by a SET; then [fields] is empty. */
+    val translation: TranslationField? = null,
+) {
+    /** All targeted columns as written in `overrides.csv`. */
+    val columns: List<String>
+        get() = fields.map { it.column } + listOfNotNull(translation?.column)
+}
 
 class Overrides(private val entries: List<Override>) {
     private val byKey = entries.groupBy { it.key }
@@ -48,8 +57,21 @@ class Overrides(private val entries: List<Override>) {
         val sets = byKey[verb.key].orEmpty().filter { it.action == OverrideAction.SET }
         if (sets.isEmpty()) return verb
         val fields = verb.fields.toMutableMap()
-        sets.forEach { override -> override.fields.forEach { fields[it] = override.value } }
-        return verb.copy(fields = fields)
+        var translationEn = verb.translationEn
+        var translationDe = verb.translationDe
+        sets.forEach { override ->
+            override.fields.forEach { fields[it] = override.value }
+            when (override.translation) {
+                TranslationField.EN -> translationEn = override.value
+                TranslationField.DE -> translationDe = override.value
+                null -> Unit
+            }
+        }
+        return verb.copy(
+            translationEn = translationEn,
+            translationDe = translationDe,
+            fields = fields,
+        )
     }
 
     /** Overrides that point to no source row, usually a typo in `overrides.csv`. */
@@ -70,18 +92,28 @@ class Overrides(private val entries: List<Override>) {
         private fun parse(row: Map<String, String>, line: Int): Override {
             val action = OverrideAction.entries.firstOrNull { it.name == row["action"]?.trim() }
                 ?: error("overrides.csv:$line: unknown action '${row["action"]}'")
-            val fields = row["fields"].orEmpty()
+            val columns = row["fields"].orEmpty()
                 .split(';')
                 .map { it.trim() }
                 .filter { it.isNotEmpty() }
+            val translations = columns.mapNotNull { TranslationField.fromColumn(it) }
+            val fields = columns
+                .filter { TranslationField.fromColumn(it) == null }
                 .map { column ->
                     SourceField.fromColumn(column)
                         ?: error("overrides.csv:$line: unknown field '$column'")
                 }
+            val value = row["value"].orEmpty().trim()
             val reason = row["reason"].orEmpty().trim()
             require(reason.isNotEmpty()) { "overrides.csv:$line: reason is mandatory" }
-            require(action != OverrideAction.SET || fields.size == 1) {
+            require(action != OverrideAction.SET || columns.size == 1) {
                 "overrides.csv:$line: SET needs exactly one field"
+            }
+            require(translations.isEmpty() || action == OverrideAction.SET) {
+                "overrides.csv:$line: translations can only be changed with SET"
+            }
+            require(translations.isEmpty() || value.isNotEmpty()) {
+                "overrides.csv:$line: SET of a translation needs a value"
             }
             require(action != OverrideAction.NO_TRAINING || fields.isNotEmpty()) {
                 "overrides.csv:$line: NO_TRAINING needs at least one field"
@@ -90,8 +122,9 @@ class Overrides(private val entries: List<Override>) {
                 key = VerbKey(row.getValue("accented").trim(), row.getValue("aspect").trim()),
                 action = action,
                 fields = fields,
-                value = row["value"].orEmpty().trim(),
+                value = value,
                 reason = reason,
+                translation = translations.singleOrNull(),
             )
         }
     }

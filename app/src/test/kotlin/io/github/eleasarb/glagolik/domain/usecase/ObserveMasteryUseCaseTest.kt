@@ -11,10 +11,13 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZoneOffset
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -29,10 +32,13 @@ class ObserveMasteryUseCaseTest {
     )
     private val progress = FakeProgressRepository()
 
-    private fun useCase(now: Instant = NOW) = ObserveMasteryUseCase(
+    private fun useCase(now: Instant = NOW) =
+        useCase(clock = Clock.fixed(now, ZoneId.of("Europe/Zurich")))
+
+    private fun useCase(clock: Clock) = ObserveMasteryUseCase(
         verbs = FakeVerbRepository(verbs = emptyList(), trainable = forms),
         progress = progress,
-        clock = Clock.fixed(now, ZoneId.of("Europe/Zurich")),
+        clock = clock,
     )
 
     @Test
@@ -90,6 +96,49 @@ class ObserveMasteryUseCaseTest {
         progress.recordReview(FormRef(1, FormKey.PAST_M), Rating.GOOD, NOW)
 
         assertEquals(listOf(MasteryCounts(new = 5), MasteryCounts(new = 4, learning = 1)), totals)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `due count rises when a card becomes due without a new answer`() = runTest {
+        progress.recordReview(FormRef(1, FormKey.PAST_M), Rating.AGAIN, NOW)
+        progress.recordReview(FormRef(2, FormKey.PAST_M), Rating.GOOD, NOW)
+        val due = mutableListOf<Int>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            useCase(clock = SchedulerClock(testScheduler, NOW))().collect { due += it.dueNow }
+        }
+
+        advanceTimeBy(Duration.ofMinutes(1).plusSeconds(1).toMillis())
+        assertEquals(listOf(0, 1), due)
+
+        advanceTimeBy(Duration.ofMinutes(10).toMillis())
+        assertEquals(listOf(0, 1, 2), due)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `nothing is emitted while no card becomes due`() = runTest {
+        val due = mutableListOf<Int>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            useCase(clock = SchedulerClock(testScheduler, NOW))().collect { due += it.dueNow }
+        }
+
+        advanceTimeBy(Duration.ofDays(1).toMillis())
+
+        assertEquals(listOf(0), due)
+    }
+
+    /** Wall clock that moves with the virtual time of the test. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private class SchedulerClock(
+        private val scheduler: TestCoroutineScheduler,
+        private val start: Instant,
+    ) : Clock() {
+        override fun instant(): Instant = start.plusMillis(scheduler.currentTime)
+
+        override fun getZone(): ZoneId = ZoneOffset.UTC
+
+        override fun withZone(zone: ZoneId): Clock = this
     }
 
     private companion object {

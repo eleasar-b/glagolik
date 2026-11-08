@@ -10,3 +10,16 @@ accented,aspect,action,fields,value,reason
 дожда'ться,perfective,EXCLUDE,,,corrupt source forms (e.g. дождала'ётся); needs a reviewed correction
 захоте'ться,perfective,EXCLUDE,,,impersonal verb with missing stress marks in its only forms; needs a reviewed correction
 быть,imperfective,NO_TRAINING,presfut_sg1;presfut_sg2;presfut_sg3;presfut_pl1;presfut_pl2;presfut_pl3,,modern Russian has no present tense of быть; есть is invariable ('there is'); six identical cards would teach a wrong pattern
+говори'ть,imperfective,SET,translations_en,"speak, talk",stray Uzbek word 'gapirish' in the source translation
+посади'ть,perfective,SET,translations_en,"plant, land airplane, dash, hurtle, send to prison",typo 'airplne'
+раздава'ться,imperfective,SET,translations_en,"come from, emanate from",typo 'emmentate' and double space
+приседа'ть,imperfective,SET,translations_en,"squat, cower, drop curtsies, curtsy, drop a curtsy",typo 'curtsys'
+ста'вить,imperfective,SET,translations_de,"stellen, setzen (Spielfigur), aufstellen, hinstellen; einstellen, ernennen, anstellen; aufführen (Theaterstück); schulen, ausbilden, einen korrekten Gebrauch üben",editor note and stray colon in the source translation
+объяви'ть,perfective,SET,translations_de,"bekanntgeben, mitteilen, ankündigen, ansagen, ausrufen, erklären",typo 'erklaren'
+перейти',perfective,SET,translations_de,"gehen, übergehen, überwechseln, überqueren, versetzt werden",typo 'versezt'
+измени'ть,perfective,SET,translations_de,"ändern, verändern, wechseln, abtrünnig werden; betrügen, untreu sein, fremdgehen",typo 'abtrünig'
+вы'ступить,perfective,SET,translations_de,"heraustreten, hervortreten, aufbrechen, ausschlagen, durchsickern, auftreten; eine Rede halten, sprechen",typo 'spechen'
+обора'чиваться,imperfective,SET,translations_de,"sich umdrehen, sich umwenden; umrunden, umlaufen; sich verwandeln",typo 'verwandlen'
+выгля'дывать,imperfective,SET,translations_de,"hinaussehen, hinausschauen, hinauslehnen, hervorschauen, hervortreten; so aussehen, so wirken",typo 'ausehen'
+изменя'ть,imperfective,SET,translations_de,"ändern, verändern, wechseln, abtrünnig werden; betrügen, untreu sein, fremdgehen",typos 'wechslen' and 'abtrünig'
+поменя'ть,perfective,SET,translations_de,"ändern; tauschen, auswechseln",typo 'auswechslen'
