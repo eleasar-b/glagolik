@@ -10,6 +10,9 @@
     <string name="aspect_imperfective">imperfective</string>
     <string name="aspect_perfective">perfective</string>
     <string name="aspect_biaspectual">biaspectual</string>
+    <string name="aspect_short_imperfective">impf.</string>
+    <string name="aspect_short_perfective">pf.</string>
+    <string name="aspect_short_biaspectual">impf./pf.</string>
     <string name="aspect_partners">Aspect partners</string>
     <!-- %1$s: infinitive, %2$s: aspect -->
     <string name="partner_chip">%1$s (%2$s)</string>
@@ -25,16 +28,47 @@
     <string name="mastery_learning">Learning</string>
     <string name="mastery_young">Young</string>
     <string name="mastery_mature">Mature</string>
-    <!-- %1$s: level, %2$d: number of forms -->
-    <string name="mastery_legend" translatable="false">%1$s %2$d</string>
-    <!-- %1$d: mature forms, %2$d: all trainable forms -->
-    <string name="mastery_fraction" translatable="false">%1$d/%2$d</string>
-    <string name="mastery_due">Due now: %1$d</string>
-    <string name="mastery_explanation">Mature: the next review is at least three weeks away.</string>
+    <string name="mastery_forms">Forms</string>
+    <string name="mastery_meaning">Meaning</string>
+    <!-- %1$d: mature cards, %2$d: all trainable cards -->
+    <!-- %1$s: smallest percentage shown, e.g. "0.1%" -->
+    <string name="mastery_percent_below" translatable="false">&lt; %1$s</string>
+    <plurals name="mastery_due">
+        <item quantity="one">%1$d due</item>
+        <item quantity="other">%1$d due</item>
+    </plurals>
+    <!-- %1$s: due cards, %2$s: new cards, e.g. "9 due · 1 new" -->
+    <string name="mastery_due_and_new" translatable="false">%1$s · %2$s</string>
+    <plurals name="mastery_new_cards">
+        <item quantity="one">%1$d new</item>
+        <item quantity="other">%1$d new</item>
+    </plurals>
+    <!-- %1$d: learned cards, %2$d: all cards, %3$s: share as percentage -->
+    <plurals name="mastery_learned">
+        <item quantity="one">%1$d of %2$d learned · %3$s</item>
+        <item quantity="other">%1$d of %2$d learned · %3$s</item>
+    </plurals>
+    <string name="mastery_verbs">Verbs</string>
+    <!-- %1$d: started verbs, %2$d: all verbs, %3$s: share as percentage -->
+    <plurals name="mastery_started">
+        <item quantity="one">%1$d of %2$d started · %3$s</item>
+        <item quantity="other">%1$d of %2$d started · %3$s</item>
+    </plurals>
+    <plurals name="mastery_summary_verbs">
+        <item quantity="one">%1$d of %2$d verb mature</item>
+        <item quantity="other">%1$d of %2$d verbs mature</item>
+    </plurals>
+    <string name="mastery_overall">Overall</string>
+    <string name="mastery_explanation">Overall: average of all cards; a card counts fully once it is mature. Learned: practised at least once. Mature: the next review is at least three weeks away.</string>
     <plurals name="mastery_summary">
         <item quantity="one">%1$d of %2$d form mature</item>
         <item quantity="other">%1$d of %2$d forms mature</item>
     </plurals>
+    <plurals name="mastery_summary_cards">
+        <item quantity="one">%1$d of %2$d card mature</item>
+        <item quantity="other">%1$d of %2$d cards mature</item>
+    </plurals>
+    <string name="verb_infinitive">Infinitive</string>
 
     <!-- Russian pronouns, identical in every UI language -->
     <string name="pronoun_sg1" translatable="false">я</string>
@@ -60,13 +94,20 @@
     <string name="training_progress">%1$d / %2$d</string>
     <string name="training_start">Start training</string>
     <string name="training_close">Close training</string>
-    <string name="training_new_form">New form</string>
+    <string name="training_new_card">New card</string>
+    <string name="training_choice_prompt">What does it mean?</string>
+    <string name="training_recall_prompt">What is the Russian verb?</string>
+    <!-- %1$s: translation, %2$s: short aspect, e.g. "say, tell (pf.)" -->
+    <string name="training_recall_translation" translatable="false">%1$s (%2$s)</string>
+    <string name="training_infinitive_label">Infinitive</string>
+    <string name="training_other_verb">Also fits, but another verb is wanted. Try again.</string>
     <!-- %1$s: Russian pronoun, the blank is the form to type -->
     <string name="training_prompt">%1$s …</string>
     <string name="training_answer_label">Your answer</string>
     <string name="training_check">Check</string>
     <string name="training_continue">Continue</string>
     <string name="training_easy">Easy</string>
+    <string name="training_option_wrong">Wrong</string>
     <string name="training_correct">Correct</string>
     <string name="training_incorrect">Not quite. Correct is:</string>
     <string name="training_yo_hint">Note: written with ё.</string>
@@ -76,12 +117,12 @@
     <string name="training_latin_letters">Latin letters in your answer: %1$s. Please use the Russian keyboard.</string>
     <string name="training_empty_answer">Please enter an answer.</string>
     <string name="training_nothing_title">All done for today</string>
-    <string name="training_nothing_text">No forms are due. You can allow more new forms per day in the settings.</string>
+    <string name="training_nothing_text">No cards are due. You can allow more new cards per day in the settings.</string>
     <string name="training_finished_title">Session complete</string>
     <string name="training_done">Done</string>
 
     <string name="settings_title">Settings</string>
-    <string name="settings_new_forms">New forms per day</string>
+    <string name="settings_new_cards">New cards per day</string>
     <string name="settings_session_size">Cards per session</string>
     <string name="settings_strict_yo">Strict ё</string>
     <string name="settings_strict_yo_summary">Count е instead of ё as wrong</string>
@@ -95,28 +136,30 @@
     <string name="settings_speech_install">Download Russian voice</string>
     <string name="settings_speech_test">Test</string>
     <string name="settings_speech_open">Text-to-speech settings</string>
+    <string name="settings_practice_meaning">Practise meaning</string>
+    <string name="settings_practice_meaning_summary">Pick the translation (RU→EN) and type the infinitive (EN→RU), mixed with the forms.</string>
     <string name="settings_tenses">Quizzed tenses</string>
     <string name="settings_tenses_hint">At least one tense stays selected.</string>
     <string name="settings_decrease">Decrease</string>
     <string name="settings_increase">Increase</string>
     <!-- %1$d: correct on first try, %2$d: cards in session (selects the plural) -->
     <plurals name="training_finished_text">
-        <item quantity="one">%1$d of %2$d form correct on the first try.</item>
-        <item quantity="other">%1$d of %2$d forms correct on the first try.</item>
+        <item quantity="one">%1$d of %2$d card correct on the first try.</item>
+        <item quantity="other">%1$d of %2$d cards correct on the first try.</item>
     </plurals>
     <string name="backup_title">Backup</string>
     <string name="backup_text">Export your progress and settings to a file of your choice (folder, USB stick, cloud app). Import replaces the current progress.</string>
     <string name="backup_export">Export</string>
     <string name="backup_import">Import</string>
     <string name="backup_working">Working…</string>
-    <!-- %1$d: number of trained forms -->
+    <!-- %1$d: number of trained cards -->
     <plurals name="backup_exported">
-        <item quantity="one">Exported: %1$d form.</item>
-        <item quantity="other">Exported: %1$d forms.</item>
+        <item quantity="one">Exported: %1$d card.</item>
+        <item quantity="other">Exported: %1$d cards.</item>
     </plurals>
     <plurals name="backup_imported">
-        <item quantity="one">Imported: %1$d form.</item>
-        <item quantity="other">Imported: %1$d forms.</item>
+        <item quantity="one">Imported: %1$d card.</item>
+        <item quantity="other">Imported: %1$d cards.</item>
     </plurals>
     <string name="backup_invalid_file">This is not a valid Glagolik export. Nothing was changed.</string>
     <string name="backup_failed">The file could not be read or written.</string>

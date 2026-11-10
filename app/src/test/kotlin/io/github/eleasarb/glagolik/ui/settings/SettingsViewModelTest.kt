@@ -49,8 +49,10 @@ class SettingsViewModelTest {
         collect(vm)
         vm.onNewCardsPerDayChange(20)
         vm.onTenseToggle(Tense.PRESENT)
+        vm.onPracticeMeaningChange(false)
 
         assertEquals(20, vm.uiState.value.settings.newCardsPerDay)
+        assertEquals(false, vm.uiState.value.settings.practiceMeaning)
         assertEquals(Tense.entries.toSet() - Tense.PRESENT, vm.uiState.value.settings.tenses)
     }
 

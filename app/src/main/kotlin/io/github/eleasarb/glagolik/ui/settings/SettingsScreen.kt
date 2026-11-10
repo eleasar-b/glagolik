@@ -89,6 +89,7 @@ fun SettingsRoute(
         onNewCardsPerDayChange = viewModel::onNewCardsPerDayChange,
         onSessionSizeChange = viewModel::onSessionSizeChange,
         onStrictYoChange = viewModel::onStrictYoChange,
+        onPracticeMeaningChange = viewModel::onPracticeMeaningChange,
         onAutoPlayAudioChange = viewModel::onAutoPlayAudioChange,
         onSpeechTest = viewModel::onSpeechTest,
         onInstallVoice = { context.openVoiceInstall() },
@@ -142,6 +143,7 @@ fun SettingsScreen(
     onNewCardsPerDayChange: (Int) -> Unit,
     onSessionSizeChange: (Int) -> Unit,
     onStrictYoChange: (Boolean) -> Unit,
+    onPracticeMeaningChange: (Boolean) -> Unit,
     onAutoPlayAudioChange: (Boolean) -> Unit,
     onSpeechTest: () -> Unit,
     onInstallVoice: () -> Unit,
@@ -181,6 +183,7 @@ fun SettingsScreen(
                 onNewCardsPerDayChange = onNewCardsPerDayChange,
                 onSessionSizeChange = onSessionSizeChange,
                 onStrictYoChange = onStrictYoChange,
+                onPracticeMeaningChange = onPracticeMeaningChange,
                 onTenseToggle = onTenseToggle,
             )
             HorizontalDivider()
@@ -238,12 +241,13 @@ private fun TrainingSettingsSection(
     onNewCardsPerDayChange: (Int) -> Unit,
     onSessionSizeChange: (Int) -> Unit,
     onStrictYoChange: (Boolean) -> Unit,
+    onPracticeMeaningChange: (Boolean) -> Unit,
     onTenseToggle: (Tense) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         NumberSetting(
-            label = stringResource(R.string.settings_new_forms),
+            label = stringResource(R.string.settings_new_cards),
             value = settings.newCardsPerDay,
             range = TrainingSettings.NEW_CARDS_RANGE,
             onValueChange = onNewCardsPerDayChange,
@@ -260,6 +264,13 @@ private fun TrainingSettingsSection(
             summary = stringResource(R.string.settings_strict_yo_summary),
             checked = settings.strictYo,
             onCheckedChange = onStrictYoChange,
+        )
+        HorizontalDivider()
+        SwitchSetting(
+            label = stringResource(R.string.settings_practice_meaning),
+            summary = stringResource(R.string.settings_practice_meaning_summary),
+            checked = settings.practiceMeaning,
+            onCheckedChange = onPracticeMeaningChange,
         )
         HorizontalDivider()
         Text(
@@ -397,6 +408,7 @@ private fun SettingsScreenPreview() {
             onNewCardsPerDayChange = {},
             onSessionSizeChange = {},
             onStrictYoChange = {},
+            onPracticeMeaningChange = {},
             onAutoPlayAudioChange = {},
             onSpeechTest = {},
             onInstallVoice = {},

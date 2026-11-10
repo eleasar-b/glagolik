@@ -42,7 +42,7 @@ class SettingsScreenTest {
         )
 
         compose.onNodeWithContentDescription(
-            label(R.string.settings_increase, R.string.settings_new_forms),
+            label(R.string.settings_increase, R.string.settings_new_cards),
         )
             .performClick()
         compose.onNodeWithContentDescription(
@@ -59,7 +59,7 @@ class SettingsScreenTest {
         show(TrainingSettings(newCardsPerDay = 0))
 
         compose.onNodeWithContentDescription(
-            label(R.string.settings_decrease, R.string.settings_new_forms),
+            label(R.string.settings_decrease, R.string.settings_new_cards),
         )
             .assertIsNotEnabled()
     }
@@ -81,6 +81,18 @@ class SettingsScreenTest {
 
         assertEquals(true, strict)
         assertEquals(Tense.PAST, toggled)
+    }
+
+    @Test
+    fun `meaning switch is on by default and reports changes`() {
+        var practice: Boolean? = null
+        show(TrainingSettings(), onPracticeMeaningChange = { practice = it })
+
+        val switch = isToggleable() and
+            hasText(context.getString(R.string.settings_practice_meaning))
+        compose.onNode(switch).performScrollTo().assertIsOn().performClick()
+
+        assertEquals(false, practice)
     }
 
     @Test
@@ -208,6 +220,7 @@ class SettingsScreenTest {
         onNewCardsPerDayChange: (Int) -> Unit = {},
         onSessionSizeChange: (Int) -> Unit = {},
         onStrictYoChange: (Boolean) -> Unit = {},
+        onPracticeMeaningChange: (Boolean) -> Unit = {},
         onAutoPlayAudioChange: (Boolean) -> Unit = {},
         speech: SpeechAvailability = SpeechAvailability.INITIALIZING,
         onSpeechTest: () -> Unit = {},
@@ -225,6 +238,7 @@ class SettingsScreenTest {
                     onNewCardsPerDayChange = onNewCardsPerDayChange,
                     onSessionSizeChange = onSessionSizeChange,
                     onStrictYoChange = onStrictYoChange,
+                    onPracticeMeaningChange = onPracticeMeaningChange,
                     onAutoPlayAudioChange = onAutoPlayAudioChange,
                     onSpeechTest = onSpeechTest,
                     onInstallVoice = onInstallVoice,

@@ -3,6 +3,8 @@ package io.github.eleasarb.glagolik.ui.verbs
 import android.content.Context
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
@@ -15,6 +17,7 @@ import androidx.test.core.app.ApplicationProvider
 import io.github.eleasarb.glagolik.R
 import io.github.eleasarb.glagolik.domain.model.Aspect
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
+import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.MasteryLevel
 import io.github.eleasarb.glagolik.domain.model.Translation
@@ -57,7 +60,7 @@ class VerbDetailScreenTest {
     )
 
     @Test
-    fun `trained forms show their level and the verb a summary`() {
+    fun `trained forms show their level and the verb a progress card`() {
         show(
             VerbDetailUiState.Success(
                 verb = podnyat,
@@ -69,12 +72,51 @@ class VerbDetailScreenTest {
             ),
         )
 
-        val summary = context.resources.getQuantityString(R.plurals.mastery_summary, 3, 1, 3)
-        compose.onNodeWithText(summary).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.mastery_title)).assertIsDisplayed()
+        compose.onNodeWithText("2 of 3 learned · 66%").assertIsDisplayed()
+        // No meaning cards: no meaning bar, no infinitive card.
+        compose.onNodeWithText(string(R.string.mastery_meaning)).assertDoesNotExist()
+        compose.onNodeWithText(string(R.string.verb_infinitive)).assertDoesNotExist()
         compose.onNodeWithContentDescription(context.getString(R.string.mastery_mature))
             .assertExists()
         compose.onNodeWithContentDescription(context.getString(R.string.mastery_learning))
             .assertExists()
+    }
+
+    @Test
+    fun `meaning cards show a meaning bar, the due cards and an infinitive card`() {
+        var spoken: String? = null
+        show(
+            VerbDetailUiState.Success(
+                verb = podnyat,
+                meaning = mapOf(
+                    Exercise.MeaningRuDe to MasteryLevel.YOUNG,
+                    Exercise.MeaningDeRu to MasteryLevel.NEW,
+                ),
+                dueNow = 1,
+                progress = 0.25,
+                canSpeak = true,
+            ),
+            onSpeak = { spoken = it },
+        )
+
+        compose.onNodeWithText(
+            context.resources.getQuantityString(R.plurals.mastery_due, 1, 1),
+        ).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.mastery_overall)).assertIsDisplayed()
+        compose.onNodeWithText("25%").assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.mastery_meaning)).assertIsDisplayed()
+        compose.onNodeWithText("1 of 2 learned · 50%").assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.verb_infinitive)).performScrollTo()
+            .assertIsDisplayed()
+        // One row with the Russian infinitive only; the dot shows the weaker direction.
+        // Top bar, header and the infinitive row; only the row is tappable.
+        compose.onAllNodesWithText("подня́ть").assertCountEquals(3)
+        compose.onNode(hasText("подня́ть") and hasClickAction()).performScrollTo().performClick()
+        assertEquals("подня́ть", spoken)
+        // One direction young, the other not answered yet: the answered one counts.
+        compose.onNodeWithContentDescription(string(R.string.mastery_young)).assertExists()
+        compose.onNodeWithContentDescription(string(R.string.mastery_new)).assertDoesNotExist()
     }
 
     @Test

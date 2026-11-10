@@ -83,24 +83,59 @@ class VerbListScreenTest {
     }
 
     private val mastery = MasteryOverview(
-        total = MasteryCounts(new = 30, learning = 2, young = 3, mature = 4),
+        forms = MasteryCounts(new = 30, learning = 2, young = 3, mature = 4),
         byVerb = mapOf(
             1 to MasteryCounts(new = 17),
             2 to MasteryCounts(new = 8, learning = 2, young = 3, mature = 4),
         ),
         dueNow = 5,
+        meaning = MasteryCounts(new = 6, young = 1, mature = 1),
+        verbs = MasteryCounts(new = 1, learning = 1),
+        progress = 0.0123,
+        newNow = 2,
     )
 
     @Test
-    fun `overview shows counts per level and due forms`() {
+    fun `no chip when the next session would be empty`() {
+        val idle = mastery.copy(dueNow = 0, newNow = 0)
+        show(VerbListUiState(verbs = verbs, isLoading = false, mastery = idle))
+
+        compose.onNodeWithText("due", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("new", substring = true).assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.mastery_title)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `chip shows due and new cards, leaving out what is zero`() {
+        show(VerbListUiState(verbs = verbs, isLoading = false, mastery = mastery))
+        compose.onNodeWithText("5 due · 2 new").assertIsDisplayed()
+    }
+
+    @Test
+    fun `chip shows only new cards when nothing is due`() {
+        val onlyNew = mastery.copy(dueNow = 0, newNow = 3)
+        show(VerbListUiState(verbs = verbs, isLoading = false, mastery = onlyNew))
+        compose.onNodeWithText("3 new").assertIsDisplayed()
+    }
+
+    @Test
+    fun `overview shows learned cards, started verbs and a due chip`() {
         show(VerbListUiState(verbs = verbs, isLoading = false, mastery = mastery))
 
         compose.onNodeWithText(context.getString(R.string.mastery_title)).assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.mastery_due, 5)).assertIsDisplayed()
-        val mature = context.getString(R.string.mastery_mature)
-        compose.onNodeWithText("$mature 4").assertIsDisplayed()
-        val new = context.getString(R.string.mastery_new)
-        compose.onNodeWithText("$new 30").assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.mastery_forms)).assertIsDisplayed()
+        // Learned = learning + young + mature, rounded down.
+        compose.onNodeWithText("9 of 39 learned · 23%").assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.mastery_meaning)).assertIsDisplayed()
+        compose.onNodeWithText("2 of 8 learned · 25%").assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.mastery_verbs)).assertIsDisplayed()
+        compose.onNodeWithText("1 of 2 started · 50%").assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.mastery_overall)).assertIsDisplayed()
+        compose.onNodeWithText("1.2%").assertIsDisplayed()
+        val meaningBar =
+            context.resources.getQuantityString(R.plurals.mastery_summary_cards, 8, 1, 8)
+        compose.onNodeWithContentDescription(meaningBar).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.mastery_mature)).assertIsDisplayed()
     }
 
     @Test
@@ -113,9 +148,11 @@ class VerbListScreenTest {
     @Test
     fun `only started verbs show their mastery`() {
         show(VerbListUiState(verbs = verbs, isLoading = false, mastery = mastery))
+        // Below the overview card (index 0) and the first verb.
+        compose.onNodeWithTag(VERB_LIST_TAG).performScrollToIndex(2)
 
-        compose.onNodeWithText("4/17").assertIsDisplayed()
-        compose.onNodeWithText("0/17").assertDoesNotExist()
+        // Only the bar, no percentage next to it.
+        compose.onNodeWithText("0%").assertDoesNotExist()
         val summary = context.resources.getQuantityString(R.plurals.mastery_summary, 17, 4, 17)
         compose.onNodeWithContentDescription(summary).assertIsDisplayed()
     }

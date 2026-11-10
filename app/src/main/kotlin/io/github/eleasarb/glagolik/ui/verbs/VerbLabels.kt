@@ -27,6 +27,14 @@ internal fun Aspect.labelRes(): Int = when (this) {
     Aspect.BIASPECTUAL -> R.string.aspect_biaspectual
 }
 
+/** Abbreviation shown after a translation, e.g. "pf.". */
+@StringRes
+internal fun Aspect.shortLabelRes(): Int = when (this) {
+    Aspect.IMPERFECTIVE -> R.string.aspect_short_imperfective
+    Aspect.PERFECTIVE -> R.string.aspect_short_perfective
+    Aspect.BIASPECTUAL -> R.string.aspect_short_biaspectual
+}
+
 @StringRes
 internal fun Tense.labelRes(): Int = when (this) {
     Tense.PRESENT -> R.string.tense_present

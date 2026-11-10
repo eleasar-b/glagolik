@@ -85,6 +85,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { repository.setStrictYo(value) }
     }
 
+    fun onPracticeMeaningChange(value: Boolean) {
+        viewModelScope.launch { repository.setPracticeMeaning(value) }
+    }
+
     fun onAutoPlayAudioChange(value: Boolean) {
         viewModelScope.launch { repository.setAutoPlayAudio(value) }
     }

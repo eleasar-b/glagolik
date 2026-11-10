@@ -39,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.eleasarb.glagolik.R
 import io.github.eleasarb.glagolik.domain.model.Aspect
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
+import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.model.MasteryLevel
@@ -46,6 +47,7 @@ import io.github.eleasarb.glagolik.domain.model.Tense
 import io.github.eleasarb.glagolik.domain.model.Translation
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
 import io.github.eleasarb.glagolik.domain.model.VerbSummary
+import io.github.eleasarb.glagolik.domain.model.verbLevel
 import io.github.eleasarb.glagolik.ui.components.MasteryBar
 import io.github.eleasarb.glagolik.ui.components.MasteryDot
 import io.github.eleasarb.glagolik.ui.components.labelRes
@@ -114,9 +116,7 @@ fun VerbDetailScreen(
             }
 
             is VerbDetailUiState.Success -> VerbDetailContent(
-                verb = uiState.verb,
-                mastery = uiState.mastery,
-                masteryCounts = uiState.masteryCounts,
+                state = uiState,
                 onPartnerClick = onPartnerClick,
                 onSpeak = onSpeak.takeIf { uiState.canSpeak },
                 modifier = contentModifier,
@@ -127,13 +127,12 @@ fun VerbDetailScreen(
 
 @Composable
 private fun VerbDetailContent(
-    verb: VerbDetail,
-    mastery: Map<FormKey, MasteryLevel>,
-    masteryCounts: MasteryCounts,
+    state: VerbDetailUiState.Success,
     onPartnerClick: (Int) -> Unit,
     onSpeak: ((String) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
+    val verb = state.verb
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -141,14 +140,29 @@ private fun VerbDetailContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         VerbHeader(summary = verb.summary, onSpeak = onSpeak)
-        if (masteryCounts.total > 0) VerbMasterySummary(counts = masteryCounts)
+        val meaningCounts = state.meaningCounts
+        if (state.masteryCounts.total > 0 || meaningCounts != null) {
+            ProgressCard(
+                overall = state.progress,
+                forms = state.masteryCounts,
+                meaning = meaningCounts,
+                dueNow = state.dueNow,
+            )
+        }
         if (verb.partners.isNotEmpty()) {
             PartnerChips(partners = verb.partners, onPartnerClick = onPartnerClick)
+        }
+        if (state.meaning.isNotEmpty()) {
+            InfinitiveCard(
+                infinitive = verb.summary.infinitive,
+                meaning = state.meaning,
+                onSpeak = onSpeak,
+            )
         }
         Tense.entries.forEach { tense ->
             val forms = verb.formsOf(tense)
             if (forms.isNotEmpty()) {
-                TenseCard(tense = tense, forms = forms, mastery = mastery, onSpeak = onSpeak)
+                TenseCard(tense = tense, forms = forms, mastery = state.mastery, onSpeak = onSpeak)
             }
         }
     }
@@ -216,20 +230,31 @@ private fun PartnerChips(
     }
 }
 
+/**
+ * The meaning cards of the verb, like a tense: the infinitive with one dot for both directions
+ * (RU→DE, DE→RU): the weaker level of the answered ones (verbLevel). A tap speaks it.
+ */
 @Composable
-private fun VerbMasterySummary(counts: MasteryCounts, modifier: Modifier = Modifier) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        MasteryBar(counts = counts, modifier = Modifier.fillMaxWidth(), height = 8.dp)
-        Text(
-            text = pluralStringResource(
-                R.plurals.mastery_summary,
-                counts.total,
-                counts.mature,
-                counts.total,
-            ),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+private fun InfinitiveCard(
+    infinitive: String,
+    meaning: Map<Exercise, MasteryLevel>,
+    onSpeak: ((String) -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    Card(modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.verb_infinitive),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            LevelRow(
+                label = null,
+                text = infinitive,
+                level = verbLevel(meaning.values),
+                onSpeak = onSpeak?.let { speak -> { speak(infinitive) } },
+            )
+        }
     }
 }
 
@@ -274,16 +299,39 @@ private fun FormRow(
     onSpeak: ((String) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    val color = if (form.isTrainable) {
+    LevelRow(
+        label = stringResource(form.key.pronounRes()),
+        text = form.variants.joinToString(VARIANT_SEPARATOR),
+        level = level,
+        onSpeak = onSpeak?.let { speak ->
+            { speak(form.variants.joinToString(SPOKEN_VARIANT_SEPARATOR)) }
+        },
+        modifier = modifier,
+        isTrainable = form.isTrainable,
+    )
+}
+
+/**
+ * Label column ([label] `null`: none), text and the level dot ([level] `null`: no dot); a tap
+ * calls [onSpeak].
+ */
+@Composable
+private fun LevelRow(
+    label: String?,
+    text: String,
+    level: MasteryLevel?,
+    onSpeak: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    isTrainable: Boolean = true,
+) {
+    val color = if (isTrainable) {
         MaterialTheme.colorScheme.onSurface
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }
     val speakLabel = stringResource(R.string.speak)
     val clickable = if (onSpeak != null) {
-        Modifier.clickable(onClickLabel = speakLabel) {
-            onSpeak(form.variants.joinToString(SPOKEN_VARIANT_SEPARATOR))
-        }
+        Modifier.clickable(onClickLabel = speakLabel, onClick = onSpeak)
     } else {
         Modifier
     }
@@ -293,14 +341,16 @@ private fun FormRow(
             .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (label != null) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.width(96.dp),
+            )
+        }
         Text(
-            text = stringResource(form.key.pronounRes()),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(96.dp),
-        )
-        Text(
-            text = form.variants.joinToString(VARIANT_SEPARATOR),
+            text = text,
             style = MaterialTheme.typography.bodyLarge,
             color = color,
             modifier = Modifier.weight(1f),
@@ -346,6 +396,12 @@ private fun VerbDetailScreenPreview() {
                     FormKey.PAST_M to MasteryLevel.LEARNING,
                     FormKey.IMPERATIVE_SG to MasteryLevel.NEW,
                 ),
+                meaning = mapOf(
+                    Exercise.MeaningRuDe to MasteryLevel.YOUNG,
+                    Exercise.MeaningDeRu to MasteryLevel.LEARNING,
+                ),
+                dueNow = 2,
+                progress = 0.44,
                 canSpeak = true,
             ),
             onBack = {},

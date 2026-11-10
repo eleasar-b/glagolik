@@ -2,7 +2,9 @@ package io.github.eleasarb.glagolik.ui.training
 
 import io.github.eleasarb.glagolik.data.tts.SpeechAvailability
 import io.github.eleasarb.glagolik.domain.checking.AnswerResult
+import io.github.eleasarb.glagolik.domain.model.CardKey
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
+import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.TrainableForm
 import io.github.eleasarb.glagolik.domain.model.TrainingSettings
@@ -10,6 +12,9 @@ import io.github.eleasarb.glagolik.domain.model.VerbDetail
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.domain.usecase.BuildSessionUseCase
 import io.github.eleasarb.glagolik.domain.usecase.ConjugationTask
+import io.github.eleasarb.glagolik.domain.usecase.MeaningCatalogTest
+import io.github.eleasarb.glagolik.domain.usecase.MeaningChoiceTask
+import io.github.eleasarb.glagolik.domain.usecase.MeaningRecallTask
 import io.github.eleasarb.glagolik.testing.FakeProgressRepository
 import io.github.eleasarb.glagolik.testing.FakeSettingsRepository
 import io.github.eleasarb.glagolik.testing.FakeSpeaker
@@ -246,6 +251,138 @@ class TrainingViewModelTest {
         assertEquals(3, vm.question().total)
         assertEquals(2, vm.question().position)
         assertTrue(vm.question().card.task.key != first)
+    }
+
+    /** Meaning cards only: verbs with translations, no forms (see MeaningCatalogTest). */
+    private fun meaningViewModel(
+        newCards: Int,
+        settings: TrainingSettings = TrainingSettings(newCardsPerDay = newCards),
+    ): TrainingViewModel {
+        val clock = Clock.fixed(NOW, ZoneOffset.UTC)
+        val settingsRepository = FakeSettingsRepository(settings)
+        val verbs = FakeVerbRepository(
+            verbs = MeaningCatalogTest.MEANING_VERBS,
+            partners = mapOf(1 to setOf(7)),
+        )
+        val buildSession =
+            BuildSessionUseCase(verbs, progress, settingsRepository, clock, Random(1))
+        return TrainingViewModel(buildSession, progress, verbs, settingsRepository, speaker, clock)
+    }
+
+    private fun TrainingViewModel.choice(): MeaningChoiceTask =
+        question().card.task as MeaningChoiceTask
+
+    @Test
+    fun `right option grades the choice as correct and stores GOOD`() {
+        val vm = meaningViewModel(newCards = 1)
+        val choice = vm.choice()
+        assertEquals(1, choice.verb.id)
+
+        vm.onOptionSelect(choice.choice.correctIndex)
+
+        assertEquals(AnswerResult.Correct("сказа́ть"), vm.question().feedback)
+        assertEquals(choice.choice.correctIndex, vm.question().chosenOption)
+        assertTrue(vm.question().isGraded)
+        vm.onContinue()
+        assertEquals(listOf(CardKey(1, Exercise.MeaningRuDe) to Rating.GOOD), progress.reviews)
+        assertTrue(vm.uiState.value is TrainingUiState.Finished)
+    }
+
+    @Test
+    fun `wrong option is AGAIN and the card comes back`() {
+        val vm = meaningViewModel(newCards = 1)
+        val wrong = (vm.choice().choice.correctIndex + 1) % 4
+
+        vm.onOptionSelect(wrong)
+        // Choosing again after grading changes nothing.
+        vm.onOptionSelect(vm.choice().choice.correctIndex)
+
+        assertEquals(AnswerResult.Incorrect(listOf("сказа́ть")), vm.question().feedback)
+        assertEquals(wrong, vm.question().chosenOption)
+        vm.onContinue(easy = true)
+        assertEquals(listOf(CardKey(1, Exercise.MeaningRuDe) to Rating.AGAIN), progress.reviews)
+        assertEquals(CardKey(1, Exercise.MeaningRuDe), vm.question().card.task.key)
+    }
+
+    @Test
+    fun `easy after a right choice stores EASY`() {
+        val vm = meaningViewModel(newCards = 1)
+        vm.onOptionSelect(vm.choice().choice.correctIndex)
+        vm.onContinue(easy = true)
+
+        assertEquals(listOf(CardKey(1, Exercise.MeaningRuDe) to Rating.EASY), progress.reviews)
+    }
+
+    @Test
+    fun `submit does nothing for a multiple choice`() {
+        val vm = meaningViewModel(newCards = 1)
+        vm.answer("сказать")
+
+        assertEquals(null, vm.question().feedback)
+    }
+
+    @Test
+    fun `another fitting verb in DE-RU asks again instead of grading`() {
+        val vm = meaningViewModel(newCards = 2)
+        vm.onOptionSelect(vm.choice().choice.correctIndex)
+        vm.onContinue()
+        assertTrue(vm.question().card.task is MeaningRecallTask)
+
+        vm.answer("сообщить")
+
+        assertEquals(AnswerResult.OtherAnswer("сообщи́ть"), vm.question().feedback)
+        assertTrue(!vm.question().isGraded)
+        vm.answer("сказать")
+        assertEquals(AnswerResult.Correct("сказа́ть"), vm.question().feedback)
+        vm.onContinue()
+        assertEquals(
+            CardKey(1, Exercise.MeaningDeRu) to Rating.GOOD,
+            progress.reviews.last(),
+        )
+    }
+
+    @Test
+    fun `wrong DE-RU answer shows the infinitive and no tense forms`() {
+        val vm = meaningViewModel(newCards = 2)
+        vm.onOptionSelect(vm.choice().choice.correctIndex)
+        vm.onContinue()
+
+        vm.answer("говорить") // shares a meaning, but is imperfective
+
+        assertEquals(AnswerResult.Incorrect(listOf("сказа́ть")), vm.question().feedback)
+        assertEquals(emptyList<ConjugatedForm>(), vm.question().tenseForms)
+    }
+
+    @Test
+    fun `the infinitive of a choice can be heard before answering`() {
+        val vm = meaningViewModel(newCards = 1)
+
+        vm.onSpeak()
+
+        assertEquals(listOf("сказа́ть"), speaker.spoken)
+    }
+
+    @Test
+    fun `DE-RU is not spoken before it is graded`() {
+        val vm = meaningViewModel(newCards = 2)
+        vm.onOptionSelect(vm.choice().choice.correctIndex)
+        vm.onContinue()
+        speaker.spoken.clear()
+
+        vm.onSpeak()
+
+        assertEquals(emptyList<String>(), speaker.spoken)
+    }
+
+    @Test
+    fun `auto play speaks the infinitive after a choice`() {
+        val vm = meaningViewModel(
+            newCards = 1,
+            settings = TrainingSettings(newCardsPerDay = 1, autoPlayAudio = true),
+        )
+        vm.onOptionSelect(vm.choice().choice.correctIndex)
+
+        assertEquals(listOf("сказа́ть"), speaker.spoken)
     }
 
     private companion object {

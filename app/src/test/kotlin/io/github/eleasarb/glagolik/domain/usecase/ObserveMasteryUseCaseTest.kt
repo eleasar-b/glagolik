@@ -1,9 +1,15 @@
 package io.github.eleasarb.glagolik.domain.usecase
 
+import io.github.eleasarb.glagolik.domain.model.CardKey
+import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
+import io.github.eleasarb.glagolik.domain.model.Tense
+import io.github.eleasarb.glagolik.domain.model.TrainingSettings
+import io.github.eleasarb.glagolik.domain.model.progress
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.testing.FakeProgressRepository
+import io.github.eleasarb.glagolik.testing.FakeSettingsRepository
 import io.github.eleasarb.glagolik.testing.FakeVerbRepository
 import io.github.eleasarb.glagolik.testing.formKey
 import io.github.eleasarb.glagolik.testing.trainableForm
@@ -35,9 +41,12 @@ class ObserveMasteryUseCaseTest {
     private fun useCase(now: Instant = NOW) =
         useCase(clock = Clock.fixed(now, ZoneId.of("Europe/Zurich")))
 
+    private val settings = FakeSettingsRepository()
+
     private fun useCase(clock: Clock) = ObserveMasteryUseCase(
         verbs = FakeVerbRepository(verbs = emptyList(), trainable = forms),
         progress = progress,
+        settings = settings,
         clock = clock,
     )
 
@@ -45,7 +54,7 @@ class ObserveMasteryUseCaseTest {
     fun `without progress every trainable form is new`() = runTest {
         val overview = useCase()().first()
 
-        assertEquals(MasteryCounts(new = 5), overview.total)
+        assertEquals(MasteryCounts(new = 5), overview.forms)
         assertEquals(MasteryCounts(new = 2), overview.byVerb[1])
         assertEquals(MasteryCounts(new = 3), overview.byVerb[2])
         assertEquals(0, overview.dueNow)
@@ -62,7 +71,7 @@ class ObserveMasteryUseCaseTest {
 
         assertEquals(MasteryCounts(new = 1, learning = 1, young = 1), overview.byVerb[2])
         assertEquals(MasteryCounts(new = 2), overview.byVerb[1])
-        assertEquals(MasteryCounts(new = 3, learning = 1, young = 1), overview.total)
+        assertEquals(MasteryCounts(new = 3, learning = 1, young = 1), overview.forms)
     }
 
     @Test
@@ -80,9 +89,90 @@ class ObserveMasteryUseCaseTest {
 
         val overview = useCase(now = NOW + Duration.ofDays(1))().first()
 
-        assertEquals(MasteryCounts(new = 5), overview.total)
+        assertEquals(MasteryCounts(new = 5), overview.forms)
         assertEquals(0, overview.dueNow)
         assertEquals(setOf(1, 2), overview.byVerb.keys)
+    }
+
+    @Test
+    fun `meaning counts both directions of every verb with translations`() = runTest {
+        val verbs = MeaningCatalogTest.MEANING_VERBS // 8 of 9 have both translations
+        progress.recordReview(CardKey(1, Exercise.MeaningRuDe), Rating.EASY, NOW)
+        progress.recordReview(CardKey(1, Exercise.MeaningDeRu), Rating.AGAIN, NOW)
+        progress.recordReview(CardKey(11, Exercise.MeaningDeRu), Rating.AGAIN, NOW)
+        val useCase = ObserveMasteryUseCase(
+            verbs = FakeVerbRepository(verbs = verbs, trainable = forms),
+            progress = progress,
+            settings = settings,
+            clock = Clock.fixed(NOW + Duration.ofMinutes(1), ZoneOffset.UTC),
+        )
+
+        val overview = useCase().first()
+
+        assertEquals(MasteryCounts(new = 14, learning = 1, young = 1), overview.meaning)
+        assertEquals(MasteryCounts(new = 5), overview.forms)
+        // The DE-RU card of verb 1 is due; verb 11 has no meaning cards.
+        assertEquals(1, overview.dueNow)
+        // Verb 1 is started (one card still learning); 8 verbs with meaning cards plus the
+        // verbs of the forms.
+        val verbIds = verbs.map { it.id } - 11 + forms.map { it.verb.id }
+        assertEquals(1, overview.verbs.learned)
+        assertEquals(1, overview.verbs.learning)
+        assertEquals(verbIds.toSet().size, overview.verbs.total)
+        val all = progress.cards.filterKeys { it.verbId != 11 }.values.sumOf { it.progress() }
+        val cards = overview.forms.total + overview.meaning.total
+        assertEquals(all / cards, overview.progress, 1e-9)
+
+        // Without meaning practice the due meaning card is not counted (as in the session).
+        settings.setPracticeMeaning(false)
+        assertEquals(0, useCase.invoke().first().dueNow)
+    }
+
+    @Test
+    fun `due counts only forms of the selected tenses`() = runTest {
+        progress.recordReview(formKey(1, FormKey.PAST_M), Rating.AGAIN, NOW)
+        progress.recordReview(formKey(2, FormKey.FUTURE_SG1), Rating.AGAIN, NOW)
+        settings.setTenses(setOf(Tense.PAST))
+
+        val overview = useCase(NOW + Duration.ofMinutes(1))().first()
+
+        assertEquals(1, overview.dueNow)
+    }
+
+    @Test
+    fun `new cards are limited by the daily limit and the session size`() = runTest {
+        progress.recordReview(formKey(1, FormKey.PAST_M), Rating.AGAIN, NOW)
+        val later = NOW + Duration.ofMinutes(1)
+
+        // 1 due, 4 unknown forms left; 10 a day, 1 used today.
+        assertEquals(4, useCase(later)().first().newNow)
+
+        settings.setNewCardsPerDay(3)
+        assertEquals(2, useCase(later)().first().newNow)
+
+        settings.replaceAll(TrainingSettings(newCardsPerDay = 10, sessionSize = 3))
+        assertEquals(2, useCase(later)().first().newNow)
+    }
+
+    @Test
+    fun `due and new cards add up to the next session`() = runTest {
+        val verbs = FakeVerbRepository(
+            verbs = MeaningCatalogTest.MEANING_VERBS,
+            trainable = forms,
+            partners = mapOf(1 to setOf(7)),
+        )
+        progress.recordReview(CardKey(1, Exercise.MeaningRuDe), Rating.AGAIN, NOW)
+        progress.recordReview(formKey(2, FormKey.PAST_M), Rating.AGAIN, NOW)
+        settings.replaceAll(TrainingSettings(newCardsPerDay = 6, tenses = setOf(Tense.PAST)))
+        val clock = Clock.fixed(NOW + Duration.ofMinutes(2), ZoneOffset.UTC)
+
+        val overview = ObserveMasteryUseCase(verbs, progress, settings, clock)().first()
+        val session =
+            BuildSessionUseCase(verbs, progress, settings, clock, kotlin.random.Random(1))()
+
+        assertEquals(2, overview.dueNow)
+        assertEquals(4, overview.newNow)
+        assertEquals(overview.dueNow + overview.newNow, session.cards.size)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -90,7 +180,7 @@ class ObserveMasteryUseCaseTest {
     fun `a new answer emits an updated overview`() = runTest {
         val totals = mutableListOf<MasteryCounts>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            useCase()().collect { totals += it.total }
+            useCase()().collect { totals += it.forms }
         }
 
         progress.recordReview(formKey(1, FormKey.PAST_M), Rating.GOOD, NOW)

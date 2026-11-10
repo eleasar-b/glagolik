@@ -12,10 +12,11 @@ import io.github.eleasarb.glagolik.data.tts.SpeechAvailability
 import io.github.eleasarb.glagolik.domain.checking.AnswerChecker
 import io.github.eleasarb.glagolik.domain.checking.AnswerResult
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
-import io.github.eleasarb.glagolik.domain.model.TrainableForm
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.domain.usecase.BuildSessionUseCase
 import io.github.eleasarb.glagolik.domain.usecase.ConjugationTask
+import io.github.eleasarb.glagolik.domain.usecase.MeaningChoiceTask
+import io.github.eleasarb.glagolik.domain.usecase.MeaningRecallTask
 import io.github.eleasarb.glagolik.domain.usecase.SessionCard
 import java.time.Clock
 import java.time.Duration
@@ -42,9 +43,11 @@ sealed interface TrainingUiState {
         val input: String = "",
         /** `null` while waiting for an answer. */
         val feedback: AnswerResult? = null,
+        /** Multiple choice: index of the chosen option once answered, `null` before. */
+        val chosenOption: Int? = null,
         /**
-         * All forms of the asked tense, shown after a wrong answer. Empty otherwise and while
-         * they are loading.
+         * Conjugation: all forms of the asked tense, shown after a wrong answer. Empty otherwise
+         * and while they are loading.
          */
         val tenseForms: List<ConjugatedForm> = emptyList(),
         /** A Russian voice is available; the correct form can be spoken once graded. */
@@ -59,11 +62,16 @@ sealed interface TrainingUiState {
 }
 
 /**
- * Runs one session. Rating (CLAUDE.md §6): wrong = AGAIN, right = GOOD, right + "easy" =
- * EASY. The rating is stored when the learner continues. Wrong cards come back at the end
- * of the session until they are answered correctly.
+ * Runs one session with all exercises (CLAUDE.md §6). Rating: wrong = AGAIN, right = GOOD,
+ * right + "easy" = EASY. The rating is stored when the learner continues. Wrong cards come
+ * back at the end of the session until they are answered correctly.
  *
- * Audio: once graded, the correct form can be spoken, automatically if the setting is on.
+ * - Conjugation and DE→RU: typed answer, checked by [AnswerChecker]. In DE→RU, another core
+ *   verb with the same aspect and meaning is not graded; the learner is asked for another one.
+ * - RU→DE: multiple choice, graded as soon as an option is chosen.
+ *
+ * Audio: once graded, the correct Russian answer (form or infinitive) can be spoken,
+ * automatically if the setting is on.
  */
 @HiltViewModel
 class TrainingViewModel @Inject constructor(
@@ -108,10 +116,8 @@ class TrainingViewModel @Inject constructor(
             checker = AnswerChecker(strictYo = current.strictYo)
             autoPlayAudio = current.autoPlayAudio
             val session = buildSession()
-            // Meaning cards get their screens in the next step; until then only forms.
-            val cards = session.cards.filter { it.task is ConjugationTask }
-            queue.addAll(cards)
-            sessionCards = cards.size
+            queue.addAll(session.cards)
+            sessionCards = session.cards.size
             if (queue.isEmpty()) {
                 _uiState.value = TrainingUiState.NothingToDo
             } else {
@@ -130,31 +136,70 @@ class TrainingViewModel @Inject constructor(
         }
     }
 
+    /** Checks the typed answer (conjugation and DE→RU). */
     fun onSubmit() {
-        val state = _uiState.value as? TrainingUiState.Question ?: return
-        if (state.isGraded) return
-        val result = checker.check(state.input, state.card.form.expected)
-        if (result is AnswerResult.Correct || result is AnswerResult.Incorrect) {
-            answerDuration = Duration.between(shownAt, clock.instant())
+        val state = ungradedQuestion() ?: return
+        val result = when (val task = state.card.task) {
+            is ConjugationTask -> checker.check(state.input, task.form.expected)
+
+            is MeaningRecallTask -> checker.check(
+                input = state.input,
+                expected = task.expected,
+                alsoFitting = task.alsoFitting.map { it.infinitive },
+            )
+
+            is MeaningChoiceTask -> return
         }
-        _uiState.value = state.copy(feedback = result)
+        grade(state.copy(feedback = result))
         if (result is AnswerResult.Incorrect) showTense(state)
-        if (autoPlayAudio) onSpeak()
     }
 
-    /** Speaks the correct form; only after the answer is graded, so it never gives it away. */
+    /** Chooses option [index] of a multiple choice (RU→DE); graded at once. */
+    fun onOptionSelect(index: Int) {
+        val state = ungradedQuestion()
+        val task = state?.card?.task as? MeaningChoiceTask
+        if (state == null || task == null || index !in task.choice.options.indices) return
+        val infinitive = task.verb.infinitive
+        val result = if (index == task.choice.correctIndex) {
+            AnswerResult.Correct(infinitive)
+        } else {
+            AnswerResult.Incorrect(listOf(infinitive))
+        }
+        grade(state.copy(feedback = result, chosenOption = index))
+    }
+
+    private fun ungradedQuestion(): TrainingUiState.Question? =
+        (_uiState.value as? TrainingUiState.Question)?.takeUnless { it.isGraded }
+
+    private fun grade(state: TrainingUiState.Question) {
+        if (state.isGraded) answerDuration = Duration.between(shownAt, clock.instant())
+        _uiState.value = state
+        if (state.isGraded && autoPlayAudio) onSpeak()
+    }
+
+    /**
+     * Speaks the Russian answer once it is graded, so it never gives it away. RU→DE shows the
+     * infinitive in the prompt, so it is spoken at any time.
+     */
     fun onSpeak() {
         val state = _uiState.value as? TrainingUiState.Question ?: return
-        val form = when (val feedback = state.feedback) {
-            is AnswerResult.Correct -> feedback.matched
-            is AnswerResult.Incorrect -> feedback.expected.firstOrNull()
-            else -> null
+        val task = state.card.task
+        val text = if (task is MeaningChoiceTask) {
+            // The infinitive is on screen from the start, so it can be heard any time.
+            task.verb.infinitive
+        } else {
+            when (val feedback = state.feedback) {
+                is AnswerResult.Correct -> feedback.matched
+                is AnswerResult.Incorrect -> feedback.expected.firstOrNull()
+                else -> null
+            }
         }
-        form?.let(speaker::speak)
+        text?.let(speaker::speak)
     }
 
+    /** Loads the forms of the asked tense after a wrong conjugation answer. */
     private fun showTense(state: TrainingUiState.Question) {
-        val form = state.card.form
+        val form = (state.card.task as? ConjugationTask)?.form ?: return
         viewModelScope.launch {
             val forms = verbs.getVerbDetail(form.verb.id)?.formsOf(form.form.tense).orEmpty()
             _uiState.update { current ->
@@ -207,6 +252,3 @@ class TrainingViewModel @Inject constructor(
         )
     }
 }
-
-/** The form of a conjugation card; sessions contain only those for now (see init). */
-internal val SessionCard.form: TrainableForm get() = (task as ConjugationTask).form

@@ -2,10 +2,15 @@ package io.github.eleasarb.glagolik.domain.usecase
 
 import io.github.eleasarb.glagolik.data.repository.ProgressRepository
 import io.github.eleasarb.glagolik.data.repository.VerbRepository
+import io.github.eleasarb.glagolik.data.settings.SettingsRepository
 import io.github.eleasarb.glagolik.domain.model.CardKey
+import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.model.MasteryOverview
+import io.github.eleasarb.glagolik.domain.model.TrainingSettings
+import io.github.eleasarb.glagolik.domain.model.averageProgress
 import io.github.eleasarb.glagolik.domain.model.masteryLevel
+import io.github.eleasarb.glagolik.domain.model.verbLevel
 import io.github.eleasarb.glagolik.domain.srs.SrsCard
 import java.time.Clock
 import java.time.Duration
@@ -15,14 +20,17 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.transformLatest
 
 /**
- * Mastery of every trainable form of the core verbs, updated after each answer.
+ * Mastery of every trainable card of the core verbs, updated after each answer: forms (in
+ * total and per verb) and meaning (both directions, in total).
  *
- * All trainable forms count, independent of the tenses selected for training. Forms marked
- * NO_TRAINING and cards of forms that are no longer trainable are ignored.
+ * All trainable forms count, independent of the tenses selected for training; meaning cards
+ * count independent of the meaning setting. Forms marked NO_TRAINING and cards that are no
+ * longer trainable are ignored.
  *
  * [MasteryOverview.dueNow] also changes without an answer: the flow emits again whenever the
  * next card becomes due, so a waiting screen stays current.
@@ -30,38 +38,70 @@ import kotlinx.coroutines.flow.transformLatest
 class ObserveMasteryUseCase @Inject constructor(
     private val verbs: VerbRepository,
     private val progress: ProgressRepository,
+    private val settings: SettingsRepository,
     private val clock: Clock,
 ) {
     @OptIn(ExperimentalCoroutinesApi::class)
     operator fun invoke(): Flow<MasteryOverview> {
-        val trainable = flow { emit(verbs.getTrainableForms().map { it.key }) }
-        return combine(trainable, progress.observeCards(), ::Snapshot)
-            .transformLatest { (refs, cards) ->
-                val dues = refs.mapNotNull { cards[it]?.due }
+        val trainable = flow {
+            val meaning = MeaningCatalog(verbs.getCoreVerbs()).verbs.flatMap { verb ->
+                Exercise.MEANINGS.map { CardKey(verb.id, it) }
+            }
+            emit(TrainableCards(forms = verbs.getTrainableForms().map { it.key }, meaning))
+        }
+        return combine(trainable, progress.observeCards(), settings.settings, ::Snapshot)
+            .transformLatest { (refs, cards, config) ->
+                val dues = (refs.forms + refs.meaning)
+                    .filter { config.trains(it.exercise) }
+                    .mapNotNull { cards[it]?.due }
                 while (true) {
                     val now = clock.instant()
-                    emit(overview(refs, cards, now))
-                    val next = dues.filter { it.isAfter(now) }.minOrNull() ?: break
+                    val introduced = progress.countIntroducedSince(startOfDay(now, clock.zone))
+                    emit(overview(refs, cards, now, config, introduced))
+                    // At midnight the daily limit for new cards starts again.
+                    val next = (dues + nextMidnight(now, clock.zone))
+                        .filter { it.isAfter(now) }
+                        .minOrNull() ?: break
                     // +1 ms: toMillis() truncates, the wait must not end just before `next`.
                     delay(Duration.between(now, next).toMillis() + 1)
                 }
             }
+            .distinctUntilChanged()
     }
 
-    private data class Snapshot(val refs: List<CardKey>, val cards: Map<CardKey, SrsCard>)
+    private data class Snapshot(
+        val refs: TrainableCards,
+        val cards: Map<CardKey, SrsCard>,
+        val config: TrainingSettings,
+    )
 }
 
+/** Keys of all cards that count for the overview. */
+internal data class TrainableCards(val forms: List<CardKey>, val meaning: List<CardKey>)
+
 internal fun overview(
-    refs: List<CardKey>,
+    refs: TrainableCards,
     cards: Map<CardKey, SrsCard>,
     now: Instant,
+    config: TrainingSettings = TrainingSettings(),
+    introducedToday: Int = 0,
 ): MasteryOverview {
-    val byVerb = refs.groupBy { it.verbId }.mapValues { (_, verbRefs) ->
-        MasteryCounts.of(verbRefs.map { cards[it].masteryLevel() })
-    }
+    fun counts(keys: List<CardKey>) = MasteryCounts.of(keys.map { cards[it].masteryLevel() })
+    val all = refs.forms + refs.meaning
+    val trained = all.filter { config.trains(it.exercise) }
+    val due = trained.count { cards[it]?.due?.isAfter(now) == false }
     return MasteryOverview(
-        total = MasteryCounts.of(refs.map { cards[it].masteryLevel() }),
-        byVerb = byVerb,
-        dueNow = refs.count { ref -> cards[ref]?.let { !it.due.isAfter(now) } ?: false },
+        forms = counts(refs.forms),
+        byVerb = refs.forms.groupBy { it.verbId }.mapValues { (_, keys) -> counts(keys) },
+        // Same filter and limits as the session: only cards it would ask.
+        dueNow = due,
+        newNow = minOf(config.newSlots(due, introducedToday), trained.count { it !in cards }),
+        meaning = counts(refs.meaning),
+        verbs = MasteryCounts.of(
+            all.groupBy { it.verbId }.values.map { keys ->
+                verbLevel(keys.map { cards[it].masteryLevel() })
+            },
+        ),
+        progress = averageProgress(all.map { cards[it] }),
     )
 }

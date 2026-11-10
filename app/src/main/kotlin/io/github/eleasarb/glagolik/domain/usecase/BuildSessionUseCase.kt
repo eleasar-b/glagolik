@@ -8,7 +8,6 @@ import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.TrainableForm
 import io.github.eleasarb.glagolik.domain.model.VerbSummary
 import java.time.Clock
-import java.time.Instant
 import javax.inject.Inject
 import kotlin.random.Random
 
@@ -73,9 +72,10 @@ class BuildSessionUseCase @Inject constructor(
     suspend operator fun invoke(): TrainingSession {
         val config = settings.current()
         val now = clock.instant()
-        val forms = verbs.getTrainableForms().filter { it.form.tense in config.tenses }
+        val forms = verbs.getTrainableForms().filter { config.trains(Exercise.Form(it.form)) }
         val coreVerbs = verbs.getCoreVerbs()
-        val catalog = MeaningCatalog(if (config.practiceMeaning) coreVerbs else emptyList())
+        val catalog =
+            MeaningCatalog(if (config.trains(Exercise.MeaningRuDe)) coreVerbs else emptyList())
         val tasks = TaskFactory(forms, catalog, random)
 
         val allDue = progress.getDueCards(now, DUE_SCAN_LIMIT)
@@ -84,9 +84,9 @@ class BuildSessionUseCase @Inject constructor(
         val dueKeys = allDue.take(config.sessionSize)
         val due = dueKeys.mapNotNull(tasks::of)
 
-        val newAllowed = (config.newCardsPerDay - progress.countIntroducedSince(startOfDay(now)))
-            .coerceAtLeast(0)
-        val newSlots = minOf(config.sessionSize - due.size, newAllowed)
+        val introducedToday = progress.countIntroducedSince(startOfDay(now, clock.zone))
+        val newAllowed = config.newAllowedToday(introducedToday)
+        val newSlots = config.newSlots(due.size, introducedToday)
         val known = progress.getKnownCards()
         val formsByVerb = forms.groupBy { it.verb.id }
         val verbOrder = (coreVerbs.map { it.summary.id } + formsByVerb.keys).distinct()
@@ -125,9 +125,6 @@ class BuildSessionUseCase @Inject constructor(
         }
         return result
     }
-
-    private fun startOfDay(now: Instant): Instant =
-        now.atZone(clock.zone).toLocalDate().atStartOfDay(clock.zone).toInstant()
 
     private companion object {
         /** Upper bound of due cards read before filtering by exercise. */

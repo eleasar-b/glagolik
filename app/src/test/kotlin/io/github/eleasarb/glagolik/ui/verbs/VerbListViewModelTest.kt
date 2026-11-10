@@ -5,6 +5,7 @@ import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.domain.usecase.ObserveMasteryUseCase
 import io.github.eleasarb.glagolik.testing.FakeProgressRepository
+import io.github.eleasarb.glagolik.testing.FakeSettingsRepository
 import io.github.eleasarb.glagolik.testing.FakeVerbRepository
 import io.github.eleasarb.glagolik.testing.MainDispatcherRule
 import io.github.eleasarb.glagolik.testing.formKey
@@ -44,6 +45,7 @@ class VerbListViewModelTest {
         observeMastery = ObserveMasteryUseCase(
             verbs = repository,
             progress = progress,
+            settings = FakeSettingsRepository(),
             clock = Clock.fixed(NOW, ZoneOffset.UTC),
         ),
     )
@@ -93,7 +95,7 @@ class VerbListViewModelTest {
         verbListViewModelCollected(viewModel)
 
         val mastery = viewModel.uiState.value.mastery
-        assertEquals(MasteryCounts(new = 3), mastery?.total)
+        assertEquals(MasteryCounts(new = 3), mastery?.forms)
         assertEquals(MasteryCounts(new = 2), mastery?.byVerb?.get(2))
     }
 
@@ -106,7 +108,7 @@ class VerbListViewModelTest {
 
         val mastery = viewModel.uiState.value.mastery
         assertEquals(MasteryCounts(new = 1, learning = 1), mastery?.byVerb?.get(2))
-        assertEquals(MasteryCounts(new = 2, learning = 1), mastery?.total)
+        assertEquals(MasteryCounts(new = 2, learning = 1), mastery?.forms)
     }
 
     /** Collects uiState eagerly, as the UI would, so WhileSubscribed upstreams run. */

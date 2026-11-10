@@ -2,10 +2,14 @@ package io.github.eleasarb.glagolik.data.db
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import io.github.eleasarb.glagolik.data.repository.OfflineVerbRepository
+import io.github.eleasarb.glagolik.domain.usecase.MeaningCatalog
+import kotlin.random.Random
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -46,6 +50,23 @@ class VerbsDatabaseAssetTest {
 
         assertTrue(dao.observeCoreVerbs("говорить").first().any { it.infinitiveBare == "говорить" })
         assertTrue(dao.observeCoreVerbs("sagen").first().any { it.infinitiveBare == "сказать" })
+    }
+
+    @Test
+    fun `every core verb gets both meaning cards with three distractors`() = runTest {
+        val core = OfflineVerbRepository(database.verbDao()).getCoreVerbs()
+        val catalog = MeaningCatalog(core)
+
+        assertEquals(CORE_VERBS, catalog.verbs.size)
+        core.forEach { verb ->
+            val choice = catalog.choice(verb.summary.id, Random(verb.summary.id))
+            assertNotNull(verb.summary.infinitive, choice)
+            val options = checkNotNull(choice).options.map { it.id }
+            assertTrue(options.none { it in verb.partnerIds })
+        }
+        val skazat = core.first { it.summary.infinitive == "сказа́ть" }
+        val alsoFitting = catalog.alsoFitting(skazat.summary.id).map { it.infinitive }
+        assertTrue(alsoFitting.toString(), "сообщи́ть" in alsoFitting)
     }
 
     @Test

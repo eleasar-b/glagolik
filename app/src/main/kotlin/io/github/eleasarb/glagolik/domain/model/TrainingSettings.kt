@@ -14,6 +14,15 @@ data class TrainingSettings(
     /** Meaning cards (RU→DE and DE→RU) are part of the sessions. */
     val practiceMeaning: Boolean = true,
 ) {
+    /**
+     * Whether sessions ask cards of [exercise]: forms of the selected tenses, meaning only with
+     * meaning practice on. "Due now" counts with the same rule.
+     */
+    fun trains(exercise: Exercise): Boolean = when (exercise) {
+        is Exercise.Form -> exercise.form.tense in tenses
+        Exercise.MeaningRuDe, Exercise.MeaningDeRu -> practiceMeaning
+    }
+
     companion object {
         const val DEFAULT_NEW_CARDS_PER_DAY = 10
         const val DEFAULT_SESSION_SIZE = 20

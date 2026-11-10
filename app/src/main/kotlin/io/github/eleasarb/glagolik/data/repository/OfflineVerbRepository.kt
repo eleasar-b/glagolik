@@ -29,6 +29,7 @@ class OfflineVerbRepository @Inject constructor(private val dao: VerbDao) : Verb
             summary = verb.toSummary(),
             forms = dao.getForms(id).toConjugatedForms(),
             partners = dao.getPartners(id).map { it.toSummary() },
+            isCore = verb.isCore,
         )
     }
 

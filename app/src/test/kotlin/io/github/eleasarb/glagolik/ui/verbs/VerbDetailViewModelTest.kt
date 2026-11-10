@@ -2,19 +2,27 @@ package io.github.eleasarb.glagolik.ui.verbs
 
 import androidx.lifecycle.SavedStateHandle
 import io.github.eleasarb.glagolik.data.tts.SpeechAvailability
+import io.github.eleasarb.glagolik.domain.model.CardKey
 import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
+import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.MasteryLevel
+import io.github.eleasarb.glagolik.domain.model.Tense
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
+import io.github.eleasarb.glagolik.domain.model.progress
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.testing.FakeProgressRepository
+import io.github.eleasarb.glagolik.testing.FakeSettingsRepository
 import io.github.eleasarb.glagolik.testing.FakeSpeaker
 import io.github.eleasarb.glagolik.testing.FakeVerbRepository
 import io.github.eleasarb.glagolik.testing.MainDispatcherRule
 import io.github.eleasarb.glagolik.testing.formKey
 import io.github.eleasarb.glagolik.testing.verbSummary
 import io.github.eleasarb.glagolik.ui.navigation.VERB_ID_ARG
+import java.time.Clock
+import java.time.Duration
 import java.time.Instant
+import java.time.ZoneOffset
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -40,7 +48,17 @@ class VerbDetailViewModelTest {
     )
     private val progress = FakeProgressRepository()
     private val speaker = FakeSpeaker(SpeechAvailability.INITIALIZING)
-    private val repository = FakeVerbRepository(verbs = emptyList(), details = mapOf(2 to detail))
+    private val translated = detail.copy(
+        summary = verbSummary(4, "сказа́ть", german = "sagen", english = "say"),
+    )
+    private val reference = translated.copy(
+        summary = translated.summary.copy(id = 8),
+        isCore = false,
+    )
+    private val repository = FakeVerbRepository(
+        verbs = emptyList(),
+        details = mapOf(2 to detail, 4 to translated, 8 to reference),
+    )
 
     @Test
     fun `known id gives success`() = runTest {
@@ -77,6 +95,53 @@ class VerbDetailViewModelTest {
     }
 
     @Test
+    fun `core verbs with translations have both meaning levels`() = runTest {
+        progress.recordReview(CardKey(4, Exercise.MeaningRuDe), Rating.EASY, NOW)
+        val viewModel = viewModelFor(4)
+        verbDetailViewModelCollected(viewModel)
+
+        val state = viewModel.uiState.value as VerbDetailUiState.Success
+        assertEquals(
+            mapOf(
+                Exercise.MeaningRuDe to MasteryLevel.YOUNG,
+                Exercise.MeaningDeRu to MasteryLevel.NEW,
+            ),
+            state.meaning,
+        )
+    }
+
+    @Test
+    fun `due cards of the verb count forms and meaning`() = runTest {
+        // AGAIN is due after a minute, EASY only after days.
+        progress.recordReview(formKey(4, FormKey.PAST_M), Rating.AGAIN, NOW)
+        progress.recordReview(CardKey(4, Exercise.MeaningDeRu), Rating.AGAIN, NOW)
+        progress.recordReview(CardKey(4, Exercise.MeaningRuDe), Rating.EASY, NOW)
+        progress.recordReview(CardKey(2, Exercise.MeaningDeRu), Rating.AGAIN, NOW)
+        val viewModel = viewModelFor(4)
+        verbDetailViewModelCollected(viewModel)
+
+        val state = viewModel.uiState.value as VerbDetailUiState.Success
+        assertEquals(2, state.dueNow)
+        assertEquals(1, state.meaningCounts?.learning)
+        // Average over the trainable cards of verb 4 (forms and both meaning directions).
+        val cards = listOf(formKey(4, FormKey.PAST_M), CardKey(4, Exercise.MeaningDeRu))
+            .map { progress.cards[it] } + progress.cards[CardKey(4, Exercise.MeaningRuDe)]
+        val trainable = translated.forms.count { it.isTrainable } + 2
+        assertEquals(cards.sumOf { it.progress() } / trainable, state.progress, 1e-9)
+    }
+
+    @Test
+    fun `reference verbs and verbs without translation have no meaning levels`() = runTest {
+        listOf(2, 8).forEach { id ->
+            val viewModel = viewModelFor(id)
+            verbDetailViewModelCollected(viewModel)
+
+            val state = viewModel.uiState.value as VerbDetailUiState.Success
+            assertEquals(emptyMap<Exercise, MasteryLevel>(), state.meaning)
+        }
+    }
+
+    @Test
     fun `forms can be spoken once a voice is ready`() = runTest {
         val viewModel = viewModelFor(2)
         verbDetailViewModelCollected(viewModel)
@@ -97,15 +162,32 @@ class VerbDetailViewModelTest {
     }
 
     @Test
+    fun `due cards follow the session filter`() = runTest {
+        progress.recordReview(formKey(4, FormKey.PAST_M), Rating.AGAIN, NOW)
+        progress.recordReview(CardKey(4, Exercise.MeaningDeRu), Rating.AGAIN, NOW)
+        settings.setPracticeMeaning(false)
+        settings.setTenses(setOf(Tense.PRESENT))
+        val viewModel = viewModelFor(4)
+        verbDetailViewModelCollected(viewModel)
+
+        val state = viewModel.uiState.value as VerbDetailUiState.Success
+        assertEquals(0, state.dueNow)
+    }
+
+    @Test
     fun `state is loading until collected`() {
         assertEquals(VerbDetailUiState.Loading, viewModelFor(2).uiState.value)
     }
+
+    private val settings = FakeSettingsRepository()
 
     private fun viewModelFor(id: Int) = VerbDetailViewModel(
         SavedStateHandle(mapOf(VERB_ID_ARG to id)),
         repository,
         progress,
         speaker,
+        settings,
+        Clock.fixed(NOW + Duration.ofMinutes(5), ZoneOffset.UTC),
     )
 
     /** Collects uiState eagerly, as the UI would, so WhileSubscribed upstreams run. */
