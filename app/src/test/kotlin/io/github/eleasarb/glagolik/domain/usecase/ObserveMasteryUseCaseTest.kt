@@ -4,9 +4,11 @@ import io.github.eleasarb.glagolik.domain.model.CardKey
 import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
+import io.github.eleasarb.glagolik.domain.model.Tense
 import io.github.eleasarb.glagolik.domain.model.progress
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.testing.FakeProgressRepository
+import io.github.eleasarb.glagolik.testing.FakeSettingsRepository
 import io.github.eleasarb.glagolik.testing.FakeVerbRepository
 import io.github.eleasarb.glagolik.testing.formKey
 import io.github.eleasarb.glagolik.testing.trainableForm
@@ -23,7 +25,6 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ObserveMasteryUseCaseTest {
@@ -39,9 +40,12 @@ class ObserveMasteryUseCaseTest {
     private fun useCase(now: Instant = NOW) =
         useCase(clock = Clock.fixed(now, ZoneId.of("Europe/Zurich")))
 
+    private val settings = FakeSettingsRepository()
+
     private fun useCase(clock: Clock) = ObserveMasteryUseCase(
         verbs = FakeVerbRepository(verbs = emptyList(), trainable = forms),
         progress = progress,
+        settings = settings,
         clock = clock,
     )
 
@@ -98,6 +102,7 @@ class ObserveMasteryUseCaseTest {
         val useCase = ObserveMasteryUseCase(
             verbs = FakeVerbRepository(verbs = verbs, trainable = forms),
             progress = progress,
+            settings = settings,
             clock = Clock.fixed(NOW + Duration.ofMinutes(1), ZoneOffset.UTC),
         )
 
@@ -116,8 +121,21 @@ class ObserveMasteryUseCaseTest {
         val all = progress.cards.filterKeys { it.verbId != 11 }.values.sumOf { it.progress() }
         val cards = overview.forms.total + overview.meaning.total
         assertEquals(all / cards, overview.progress, 1e-9)
-        assertEquals(0.0, overview.progressByVerb.getValue(5), 0.0)
-        assertTrue(overview.progressByVerb.getValue(1) > 0)
+
+        // Without meaning practice the due meaning card is not counted (as in the session).
+        settings.setPracticeMeaning(false)
+        assertEquals(0, useCase.invoke().first().dueNow)
+    }
+
+    @Test
+    fun `due counts only forms of the selected tenses`() = runTest {
+        progress.recordReview(formKey(1, FormKey.PAST_M), Rating.AGAIN, NOW)
+        progress.recordReview(formKey(2, FormKey.FUTURE_SG1), Rating.AGAIN, NOW)
+        settings.setTenses(setOf(Tense.PAST))
+
+        val overview = useCase(NOW + Duration.ofMinutes(1))().first()
+
+        assertEquals(1, overview.dueNow)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

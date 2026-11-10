@@ -2,10 +2,12 @@ package io.github.eleasarb.glagolik.domain.usecase
 
 import io.github.eleasarb.glagolik.data.repository.ProgressRepository
 import io.github.eleasarb.glagolik.data.repository.VerbRepository
+import io.github.eleasarb.glagolik.data.settings.SettingsRepository
 import io.github.eleasarb.glagolik.domain.model.CardKey
 import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.model.MasteryOverview
+import io.github.eleasarb.glagolik.domain.model.TrainingSettings
 import io.github.eleasarb.glagolik.domain.model.averageProgress
 import io.github.eleasarb.glagolik.domain.model.masteryLevel
 import io.github.eleasarb.glagolik.domain.model.verbLevel
@@ -35,6 +37,7 @@ import kotlinx.coroutines.flow.transformLatest
 class ObserveMasteryUseCase @Inject constructor(
     private val verbs: VerbRepository,
     private val progress: ProgressRepository,
+    private val settings: SettingsRepository,
     private val clock: Clock,
 ) {
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -45,12 +48,14 @@ class ObserveMasteryUseCase @Inject constructor(
             }
             emit(TrainableCards(forms = verbs.getTrainableForms().map { it.key }, meaning))
         }
-        return combine(trainable, progress.observeCards(), ::Snapshot)
-            .transformLatest { (refs, cards) ->
-                val dues = (refs.forms + refs.meaning).mapNotNull { cards[it]?.due }
+        return combine(trainable, progress.observeCards(), settings.settings, ::Snapshot)
+            .transformLatest { (refs, cards, config) ->
+                val dues = (refs.forms + refs.meaning)
+                    .filter { config.trains(it.exercise) }
+                    .mapNotNull { cards[it]?.due }
                 while (true) {
                     val now = clock.instant()
-                    emit(overview(refs, cards, now))
+                    emit(overview(refs, cards, now, config))
                     val next = dues.filter { it.isAfter(now) }.minOrNull() ?: break
                     // +1 ms: toMillis() truncates, the wait must not end just before `next`.
                     delay(Duration.between(now, next).toMillis() + 1)
@@ -58,7 +63,11 @@ class ObserveMasteryUseCase @Inject constructor(
             }
     }
 
-    private data class Snapshot(val refs: TrainableCards, val cards: Map<CardKey, SrsCard>)
+    private data class Snapshot(
+        val refs: TrainableCards,
+        val cards: Map<CardKey, SrsCard>,
+        val config: TrainingSettings,
+    )
 }
 
 /** Keys of all cards that count for the overview. */
@@ -68,13 +77,17 @@ internal fun overview(
     refs: TrainableCards,
     cards: Map<CardKey, SrsCard>,
     now: Instant,
+    config: TrainingSettings = TrainingSettings(),
 ): MasteryOverview {
     fun counts(keys: List<CardKey>) = MasteryCounts.of(keys.map { cards[it].masteryLevel() })
     val all = refs.forms + refs.meaning
     return MasteryOverview(
         forms = counts(refs.forms),
         byVerb = refs.forms.groupBy { it.verbId }.mapValues { (_, keys) -> counts(keys) },
-        dueNow = all.count { key -> cards[key]?.let { !it.due.isAfter(now) } ?: false },
+        // Same filter as the session: only cards it would ask.
+        dueNow = all.count { key ->
+            config.trains(key.exercise) && cards[key]?.due?.isAfter(now) == false
+        },
         meaning = counts(refs.meaning),
         verbs = MasteryCounts.of(
             all.groupBy { it.verbId }.values.map { keys ->
@@ -82,7 +95,5 @@ internal fun overview(
             },
         ),
         progress = averageProgress(all.map { cards[it] }),
-        progressByVerb = all.groupBy { it.verbId }
-            .mapValues { (_, keys) -> averageProgress(keys.map { cards[it] }) },
     )
 }

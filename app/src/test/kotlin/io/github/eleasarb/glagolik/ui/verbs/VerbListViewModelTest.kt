@@ -5,6 +5,7 @@ import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.domain.usecase.ObserveMasteryUseCase
 import io.github.eleasarb.glagolik.testing.FakeProgressRepository
+import io.github.eleasarb.glagolik.testing.FakeSettingsRepository
 import io.github.eleasarb.glagolik.testing.FakeVerbRepository
 import io.github.eleasarb.glagolik.testing.MainDispatcherRule
 import io.github.eleasarb.glagolik.testing.formKey
@@ -44,6 +45,7 @@ class VerbListViewModelTest {
         observeMastery = ObserveMasteryUseCase(
             verbs = repository,
             progress = progress,
+            settings = FakeSettingsRepository(),
             clock = Clock.fixed(NOW, ZoneOffset.UTC),
         ),
     )

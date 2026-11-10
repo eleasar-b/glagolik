@@ -1,15 +1,12 @@
 package io.github.eleasarb.glagolik.ui.verbs
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
@@ -32,7 +29,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -58,8 +54,6 @@ internal const val VERB_LIST_TAG = "verb-list"
 private val FAB_CLEARANCE = 88.dp
 
 /** Wide enough for "18/18", so the bars of all rows end at the same position. */
-private val PERCENT_MIN_WIDTH = 40.dp
-
 @Composable
 fun VerbListRoute(
     onVerbClick: (Int) -> Unit,
@@ -172,7 +166,6 @@ private fun VerbList(
             VerbRow(
                 verb = verb,
                 mastery = mastery?.byVerb?.get(verb.id),
-                progress = mastery?.progressByVerb?.get(verb.id) ?: 0.0,
                 onClick = { onVerbClick(verb.id) },
             )
             HorizontalDivider()
@@ -184,7 +177,6 @@ private fun VerbList(
 private fun VerbRow(
     verb: VerbSummary,
     mastery: MasteryCounts?,
-    progress: Double,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -208,34 +200,14 @@ private fun VerbRow(
             },
         )
         // Below the ListItem, so the trailing aspect label does not shorten the bar.
-        if (mastery != null && (mastery.isStarted || progress > 0)) {
-            VerbMastery(
+        if (mastery != null && mastery.isStarted) {
+            MasteryBar(
                 counts = mastery,
-                progress = progress,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
             )
         }
-    }
-}
-
-/**
- * Bar of the forms by level and the progress of the whole verb (forms and meaning) for a verb
- * with at least one answered card.
- */
-@Composable
-private fun VerbMastery(counts: MasteryCounts, progress: Double, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        MasteryBar(counts = counts, modifier = Modifier.weight(1f))
-        Text(
-            text = shareText(progress),
-            style = MaterialTheme.typography.labelSmall,
-            textAlign = TextAlign.End,
-            modifier = Modifier.widthIn(min = PERCENT_MIN_WIDTH),
-        )
     }
 }
 
@@ -261,7 +233,6 @@ private fun VerbListScreenPreview() {
                     meaning = MasteryCounts(new = 2, young = 1, mature = 1),
                     verbs = MasteryCounts(new = 1, learning = 1),
                     progress = 0.03,
-                    progressByVerb = mapOf(2 to 0.44),
                 ),
             ),
             onQueryChange = {},

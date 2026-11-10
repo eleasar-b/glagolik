@@ -83,7 +83,10 @@ data class MasteryOverview(
     val forms: MasteryCounts,
     /** Forms per verb. */
     val byVerb: Map<Int, MasteryCounts>,
-    /** Cards (forms and meaning) due at the time the overview was computed. */
+    /**
+     * Cards due at the time the overview was computed, only those a session asks (selected
+     * tenses, meaning only with meaning practice on).
+     */
     val dueNow: Int,
     /** Both meaning directions of every verb that takes part. */
     val meaning: MasteryCounts = MasteryCounts(),
@@ -91,8 +94,6 @@ data class MasteryOverview(
     val verbs: MasteryCounts = MasteryCounts(),
     /** Average [progress] of all trainable cards (forms and meaning), 0 to 1. */
     val progress: Double = 0.0,
-    /** Average [progress] of the trainable cards (forms and meaning) per verb. */
-    val progressByVerb: Map<Int, Double> = emptyMap(),
 )
 
 /**

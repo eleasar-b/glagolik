@@ -92,7 +92,6 @@ class VerbListScreenTest {
         meaning = MasteryCounts(new = 6, young = 1, mature = 1),
         verbs = MasteryCounts(new = 1, learning = 1),
         progress = 0.0123,
-        progressByVerb = mapOf(1 to 0.0, 2 to 0.442),
     )
 
     @Test
@@ -140,8 +139,7 @@ class VerbListScreenTest {
         // Below the overview card (index 0) and the first verb.
         compose.onNodeWithTag(VERB_LIST_TAG).performScrollToIndex(2)
 
-        // Progress of the whole verb, rounded down.
-        compose.onNodeWithText("44%").assertIsDisplayed()
+        // Only the bar, no percentage next to it.
         compose.onNodeWithText("0%").assertDoesNotExist()
         val summary = context.resources.getQuantityString(R.plurals.mastery_summary, 17, 4, 17)
         compose.onNodeWithContentDescription(summary).assertIsDisplayed()

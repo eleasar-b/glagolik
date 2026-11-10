@@ -7,10 +7,12 @@ import io.github.eleasarb.glagolik.domain.model.ConjugatedForm
 import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.MasteryLevel
+import io.github.eleasarb.glagolik.domain.model.Tense
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
 import io.github.eleasarb.glagolik.domain.model.progress
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.testing.FakeProgressRepository
+import io.github.eleasarb.glagolik.testing.FakeSettingsRepository
 import io.github.eleasarb.glagolik.testing.FakeSpeaker
 import io.github.eleasarb.glagolik.testing.FakeVerbRepository
 import io.github.eleasarb.glagolik.testing.MainDispatcherRule
@@ -160,15 +162,31 @@ class VerbDetailViewModelTest {
     }
 
     @Test
+    fun `due cards follow the session filter`() = runTest {
+        progress.recordReview(formKey(4, FormKey.PAST_M), Rating.AGAIN, NOW)
+        progress.recordReview(CardKey(4, Exercise.MeaningDeRu), Rating.AGAIN, NOW)
+        settings.setPracticeMeaning(false)
+        settings.setTenses(setOf(Tense.PRESENT))
+        val viewModel = viewModelFor(4)
+        verbDetailViewModelCollected(viewModel)
+
+        val state = viewModel.uiState.value as VerbDetailUiState.Success
+        assertEquals(0, state.dueNow)
+    }
+
+    @Test
     fun `state is loading until collected`() {
         assertEquals(VerbDetailUiState.Loading, viewModelFor(2).uiState.value)
     }
+
+    private val settings = FakeSettingsRepository()
 
     private fun viewModelFor(id: Int) = VerbDetailViewModel(
         SavedStateHandle(mapOf(VERB_ID_ARG to id)),
         repository,
         progress,
         speaker,
+        settings,
         Clock.fixed(NOW + Duration.ofMinutes(5), ZoneOffset.UTC),
     )
 

@@ -73,9 +73,10 @@ class BuildSessionUseCase @Inject constructor(
     suspend operator fun invoke(): TrainingSession {
         val config = settings.current()
         val now = clock.instant()
-        val forms = verbs.getTrainableForms().filter { it.form.tense in config.tenses }
+        val forms = verbs.getTrainableForms().filter { config.trains(Exercise.Form(it.form)) }
         val coreVerbs = verbs.getCoreVerbs()
-        val catalog = MeaningCatalog(if (config.practiceMeaning) coreVerbs else emptyList())
+        val catalog =
+            MeaningCatalog(if (config.trains(Exercise.MeaningRuDe)) coreVerbs else emptyList())
         val tasks = TaskFactory(forms, catalog, random)
 
         val allDue = progress.getDueCards(now, DUE_SCAN_LIMIT)

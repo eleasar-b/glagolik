@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.eleasarb.glagolik.data.repository.ProgressRepository
 import io.github.eleasarb.glagolik.data.repository.VerbRepository
+import io.github.eleasarb.glagolik.data.settings.SettingsRepository
 import io.github.eleasarb.glagolik.data.tts.Speaker
 import io.github.eleasarb.glagolik.data.tts.SpeechAvailability
 import io.github.eleasarb.glagolik.domain.model.Exercise
@@ -42,7 +43,10 @@ sealed interface VerbDetailUiState {
          * (reference verbs, missing translation).
          */
         val meaning: Map<Exercise, MasteryLevel> = emptyMap(),
-        /** Trainable cards of this verb (forms and meaning) due when the state was built. */
+        /**
+         * Cards of this verb due when the state was built, only those a session asks (selected
+         * tenses, meaning only with meaning practice on).
+         */
         val dueNow: Int = 0,
         /** Average progress of the trainable cards of this verb (forms and meaning), 0 to 1. */
         val progress: Double = 0.0,
@@ -63,6 +67,7 @@ class VerbDetailViewModel @Inject constructor(
     private val repository: VerbRepository,
     private val progress: ProgressRepository,
     private val speaker: Speaker,
+    private val settings: SettingsRepository,
     private val clock: Clock,
 ) : ViewModel(speaker) {
     private val verbId: Int = checkNotNull(savedStateHandle[VERB_ID_ARG])
@@ -73,7 +78,8 @@ class VerbDetailViewModel @Inject constructor(
         detail,
         progress.observeCards(verbId),
         speaker.availability,
-    ) { verb, cards, availability ->
+        settings.settings,
+    ) { verb, cards, availability, config ->
         if (verb == null) {
             VerbDetailUiState.NotFound
         } else {
@@ -92,7 +98,10 @@ class VerbDetailViewModel @Inject constructor(
                     .associate { it.form to cards[it].masteryLevel() },
                 meaning = trainable.filter { it.kind == ExerciseKind.MEANING }
                     .associateWith { cards[it].masteryLevel() },
-                dueNow = trainable.count { cards[it]?.due?.isAfter(now) == false },
+                // Same filter as the session: only cards it would ask.
+                dueNow = trainable.count {
+                    config.trains(it) && cards[it]?.due?.isAfter(now) == false
+                },
                 progress = averageProgress(trainable.map { cards[it] }),
                 canSpeak = availability == SpeechAvailability.READY,
             )
