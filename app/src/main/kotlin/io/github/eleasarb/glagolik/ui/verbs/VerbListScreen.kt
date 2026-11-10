@@ -172,6 +172,7 @@ private fun VerbList(
             VerbRow(
                 verb = verb,
                 mastery = mastery?.byVerb?.get(verb.id),
+                progress = mastery?.progressByVerb?.get(verb.id) ?: 0.0,
                 onClick = { onVerbClick(verb.id) },
             )
             HorizontalDivider()
@@ -183,6 +184,7 @@ private fun VerbList(
 private fun VerbRow(
     verb: VerbSummary,
     mastery: MasteryCounts?,
+    progress: Double,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -206,18 +208,22 @@ private fun VerbRow(
             },
         )
         // Below the ListItem, so the trailing aspect label does not shorten the bar.
-        if (mastery != null && mastery.isStarted) {
+        if (mastery != null && (mastery.isStarted || progress > 0)) {
             VerbMastery(
                 counts = mastery,
+                progress = progress,
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
             )
         }
     }
 }
 
-/** Bar and share of learned forms for a verb with at least one answered form. */
+/**
+ * Bar of the forms by level and the progress of the whole verb (forms and meaning) for a verb
+ * with at least one answered card.
+ */
 @Composable
-private fun VerbMastery(counts: MasteryCounts, modifier: Modifier = Modifier) {
+private fun VerbMastery(counts: MasteryCounts, progress: Double, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -225,7 +231,7 @@ private fun VerbMastery(counts: MasteryCounts, modifier: Modifier = Modifier) {
     ) {
         MasteryBar(counts = counts, modifier = Modifier.weight(1f))
         Text(
-            text = counts.learnedPercentText(),
+            text = shareText(progress),
             style = MaterialTheme.typography.labelSmall,
             textAlign = TextAlign.End,
             modifier = Modifier.widthIn(min = PERCENT_MIN_WIDTH),
@@ -254,6 +260,8 @@ private fun VerbListScreenPreview() {
                     dueNow = 3,
                     meaning = MasteryCounts(new = 2, young = 1, mature = 1),
                     verbs = MasteryCounts(new = 1, learning = 1),
+                    progress = 0.03,
+                    progressByVerb = mapOf(2 to 0.44),
                 ),
             ),
             onQueryChange = {},

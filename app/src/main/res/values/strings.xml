@@ -52,7 +52,8 @@
         <item quantity="one">%1$d of %2$d verb mature</item>
         <item quantity="other">%1$d of %2$d verbs mature</item>
     </plurals>
-    <string name="mastery_explanation">Learned: practised at least once. Mature: the next review is at least three weeks away.</string>
+    <string name="mastery_overall">Overall</string>
+    <string name="mastery_explanation">Overall: average of all cards; a card counts fully once it is mature. Learned: practised at least once. Mature: the next review is at least three weeks away.</string>
     <plurals name="mastery_summary">
         <item quantity="one">%1$d of %2$d form mature</item>
         <item quantity="other">%1$d of %2$d forms mature</item>

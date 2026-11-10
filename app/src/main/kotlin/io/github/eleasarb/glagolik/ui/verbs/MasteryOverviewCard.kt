@@ -40,6 +40,7 @@ import io.github.eleasarb.glagolik.ui.theme.GlagolikTheme
 @Composable
 fun MasteryOverviewCard(overview: MasteryOverview, modifier: Modifier = Modifier) {
     ProgressCard(
+        overall = overview.progress,
         forms = overview.forms,
         meaning = overview.meaning,
         dueNow = overview.dueNow,
@@ -58,13 +59,14 @@ fun MasteryOverviewCard(overview: MasteryOverview, modifier: Modifier = Modifier
 }
 
 /**
- * "Progress" with a chip for the due cards and one bar each for the forms and the meaning
- * ("x of y learned · z %"), for all verbs or a single one. Without [meaning] (verbs without
- * meaning cards) only the forms are shown; with [verbs] a third bar shows the started verbs.
- * [footer] follows below the bars.
+ * "Progress" with a chip for the due cards, the [overall] progress (0 to 1) and one bar each
+ * for the forms and the meaning ("x of y learned · z %"), for all verbs or a single one.
+ * Without [meaning] (verbs without meaning cards) only the forms are shown; with [verbs] a
+ * third bar shows the started verbs. [footer] follows below the bars.
  */
 @Composable
 fun ProgressCard(
+    overall: Double,
     forms: MasteryCounts,
     meaning: MasteryCounts?,
     dueNow: Int,
@@ -84,6 +86,14 @@ fun ProgressCard(
                     modifier = Modifier.weight(1f),
                 )
                 if (dueNow > 0) DueChip(dueNow = dueNow)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.mastery_overall),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(text = shareText(overall), style = MaterialTheme.typography.titleLarge)
             }
             KindMastery(
                 label = stringResource(R.string.mastery_forms),
@@ -191,6 +201,7 @@ private fun MasteryOverviewCardPreview() {
                 dueNow = 17,
                 meaning = MasteryCounts(new = 1_080, learning = 12, young = 60, mature = 48),
                 verbs = MasteryCounts(new = 559, learning = 38, young = 3),
+                progress = 0.012,
             ),
         )
     }

@@ -94,6 +94,7 @@ class VerbDetailScreenTest {
                     Exercise.MeaningDeRu to MasteryLevel.NEW,
                 ),
                 dueNow = 1,
+                progress = 0.25,
                 canSpeak = true,
             ),
             onSpeak = { spoken = it },
@@ -102,6 +103,8 @@ class VerbDetailScreenTest {
         compose.onNodeWithText(
             context.resources.getQuantityString(R.plurals.mastery_due, 1, 1),
         ).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.mastery_overall)).assertIsDisplayed()
+        compose.onNodeWithText("25%").assertIsDisplayed()
         compose.onNodeWithText(string(R.string.mastery_meaning)).assertIsDisplayed()
         compose.onNodeWithText("1 of 2 learned · 50%").assertIsDisplayed()
         compose.onNodeWithText(string(R.string.verb_infinitive)).performScrollTo()
@@ -111,8 +114,9 @@ class VerbDetailScreenTest {
         compose.onAllNodesWithText("подня́ть").assertCountEquals(3)
         compose.onNode(hasText("подня́ть") and hasClickAction()).performScrollTo().performClick()
         assertEquals("подня́ть", spoken)
-        compose.onNodeWithContentDescription(string(R.string.mastery_young)).assertDoesNotExist()
-        compose.onNodeWithContentDescription(string(R.string.mastery_new)).assertExists()
+        // One direction young, the other not answered yet: the answered one counts.
+        compose.onNodeWithContentDescription(string(R.string.mastery_young)).assertExists()
+        compose.onNodeWithContentDescription(string(R.string.mastery_new)).assertDoesNotExist()
     }
 
     @Test

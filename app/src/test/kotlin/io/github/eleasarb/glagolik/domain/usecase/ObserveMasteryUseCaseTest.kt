@@ -4,6 +4,7 @@ import io.github.eleasarb.glagolik.domain.model.CardKey
 import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
+import io.github.eleasarb.glagolik.domain.model.progress
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.testing.FakeProgressRepository
 import io.github.eleasarb.glagolik.testing.FakeVerbRepository
@@ -22,6 +23,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ObserveMasteryUseCaseTest {
@@ -111,6 +113,11 @@ class ObserveMasteryUseCaseTest {
         assertEquals(1, overview.verbs.learned)
         assertEquals(1, overview.verbs.learning)
         assertEquals(verbIds.toSet().size, overview.verbs.total)
+        val all = progress.cards.filterKeys { it.verbId != 11 }.values.sumOf { it.progress() }
+        val cards = overview.forms.total + overview.meaning.total
+        assertEquals(all / cards, overview.progress, 1e-9)
+        assertEquals(0.0, overview.progressByVerb.getValue(5), 0.0)
+        assertTrue(overview.progressByVerb.getValue(1) > 0)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

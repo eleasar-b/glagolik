@@ -47,6 +47,7 @@ import io.github.eleasarb.glagolik.domain.model.Tense
 import io.github.eleasarb.glagolik.domain.model.Translation
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
 import io.github.eleasarb.glagolik.domain.model.VerbSummary
+import io.github.eleasarb.glagolik.domain.model.verbLevel
 import io.github.eleasarb.glagolik.ui.components.MasteryBar
 import io.github.eleasarb.glagolik.ui.components.MasteryDot
 import io.github.eleasarb.glagolik.ui.components.labelRes
@@ -142,6 +143,7 @@ private fun VerbDetailContent(
         val meaningCounts = state.meaningCounts
         if (state.masteryCounts.total > 0 || meaningCounts != null) {
             ProgressCard(
+                overall = state.progress,
                 forms = state.masteryCounts,
                 meaning = meaningCounts,
                 dueNow = state.dueNow,
@@ -230,7 +232,7 @@ private fun PartnerChips(
 
 /**
  * The meaning cards of the verb, like a tense: the infinitive with one dot for both directions
- * (RU→DE, DE→RU), showing the weaker level. A tap speaks the infinitive.
+ * (RU→DE, DE→RU): the weaker level of the answered ones (verbLevel). A tap speaks it.
  */
 @Composable
 private fun InfinitiveCard(
@@ -249,7 +251,7 @@ private fun InfinitiveCard(
             LevelRow(
                 label = null,
                 text = infinitive,
-                level = meaning.values.minByOrNull { it.ordinal },
+                level = verbLevel(meaning.values),
                 onSpeak = onSpeak?.let { speak -> { speak(infinitive) } },
             )
         }
@@ -399,6 +401,7 @@ private fun VerbDetailScreenPreview() {
                     Exercise.MeaningDeRu to MasteryLevel.LEARNING,
                 ),
                 dueNow = 2,
+                progress = 0.44,
                 canSpeak = true,
             ),
             onBack = {},

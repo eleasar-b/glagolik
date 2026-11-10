@@ -6,6 +6,7 @@ import io.github.eleasarb.glagolik.domain.model.CardKey
 import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.model.MasteryOverview
+import io.github.eleasarb.glagolik.domain.model.averageProgress
 import io.github.eleasarb.glagolik.domain.model.masteryLevel
 import io.github.eleasarb.glagolik.domain.model.verbLevel
 import io.github.eleasarb.glagolik.domain.srs.SrsCard
@@ -80,5 +81,8 @@ internal fun overview(
                 verbLevel(keys.map { cards[it].masteryLevel() })
             },
         ),
+        progress = averageProgress(all.map { cards[it] }),
+        progressByVerb = all.groupBy { it.verbId }
+            .mapValues { (_, keys) -> averageProgress(keys.map { cards[it] }) },
     )
 }

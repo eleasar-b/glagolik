@@ -32,6 +32,14 @@ class LearnedPercentTest {
     }
 
     @Test
+    fun `shares round down without floating point surprises`() {
+        assertEquals(LearnedPercent("30%"), sharePercent(0.3, english))
+        assertEquals(LearnedPercent("0.3%"), sharePercent(0.003, english))
+        assertEquals(LearnedPercent("44%"), sharePercent(0.442, english))
+        assertEquals(LearnedPercent("0.1%", isBelowSmallest = true), sharePercent(0.0002, english))
+    }
+
+    @Test
     fun `something learned is never shown as zero`() {
         assertEquals(
             LearnedPercent("0.1%", isBelowSmallest = true),

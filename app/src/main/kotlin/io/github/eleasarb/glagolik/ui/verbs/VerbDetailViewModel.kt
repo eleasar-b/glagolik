@@ -15,6 +15,7 @@ import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.model.MasteryLevel
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
+import io.github.eleasarb.glagolik.domain.model.averageProgress
 import io.github.eleasarb.glagolik.domain.model.hasMeaningCards
 import io.github.eleasarb.glagolik.domain.model.masteryLevel
 import io.github.eleasarb.glagolik.ui.navigation.VERB_ID_ARG
@@ -43,6 +44,8 @@ sealed interface VerbDetailUiState {
         val meaning: Map<Exercise, MasteryLevel> = emptyMap(),
         /** Trainable cards of this verb (forms and meaning) due when the state was built. */
         val dueNow: Int = 0,
+        /** Average progress of the trainable cards of this verb (forms and meaning), 0 to 1. */
+        val progress: Double = 0.0,
         /** A Russian voice is available; infinitive and forms can be spoken. */
         val canSpeak: Boolean = false,
     ) : VerbDetailUiState {
@@ -90,6 +93,7 @@ class VerbDetailViewModel @Inject constructor(
                 meaning = trainable.filter { it.kind == ExerciseKind.MEANING }
                     .associateWith { cards[it].masteryLevel() },
                 dueNow = trainable.count { cards[it]?.due?.isAfter(now) == false },
+                progress = averageProgress(trainable.map { cards[it] }),
                 canSpeak = availability == SpeechAvailability.READY,
             )
         }

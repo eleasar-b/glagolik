@@ -8,6 +8,7 @@ import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.MasteryLevel
 import io.github.eleasarb.glagolik.domain.model.VerbDetail
+import io.github.eleasarb.glagolik.domain.model.progress
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.testing.FakeProgressRepository
 import io.github.eleasarb.glagolik.testing.FakeSpeaker
@@ -120,6 +121,11 @@ class VerbDetailViewModelTest {
         val state = viewModel.uiState.value as VerbDetailUiState.Success
         assertEquals(2, state.dueNow)
         assertEquals(1, state.meaningCounts?.learning)
+        // Average over the trainable cards of verb 4 (forms and both meaning directions).
+        val cards = listOf(formKey(4, FormKey.PAST_M), CardKey(4, Exercise.MeaningDeRu))
+            .map { progress.cards[it] } + progress.cards[CardKey(4, Exercise.MeaningRuDe)]
+        val trainable = translated.forms.count { it.isTrainable } + 2
+        assertEquals(cards.sumOf { it.progress() } / trainable, state.progress, 1e-9)
     }
 
     @Test

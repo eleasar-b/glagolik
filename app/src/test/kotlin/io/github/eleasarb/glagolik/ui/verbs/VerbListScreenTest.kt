@@ -91,6 +91,8 @@ class VerbListScreenTest {
         dueNow = 5,
         meaning = MasteryCounts(new = 6, young = 1, mature = 1),
         verbs = MasteryCounts(new = 1, learning = 1),
+        progress = 0.0123,
+        progressByVerb = mapOf(1 to 0.0, 2 to 0.442),
     )
 
     @Test
@@ -117,6 +119,8 @@ class VerbListScreenTest {
         compose.onNodeWithText("2 of 8 learned · 25%").assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.mastery_verbs)).assertIsDisplayed()
         compose.onNodeWithText("1 of 2 started · 50%").assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.mastery_overall)).assertIsDisplayed()
+        compose.onNodeWithText("1.2%").assertIsDisplayed()
         val meaningBar =
             context.resources.getQuantityString(R.plurals.mastery_summary_cards, 8, 1, 8)
         compose.onNodeWithContentDescription(meaningBar).assertIsDisplayed()
@@ -136,8 +140,8 @@ class VerbListScreenTest {
         // Below the overview card (index 0) and the first verb.
         compose.onNodeWithTag(VERB_LIST_TAG).performScrollToIndex(2)
 
-        // 9 of 17 learned = 52.9 %, rounded down.
-        compose.onNodeWithText("52%").assertIsDisplayed()
+        // Progress of the whole verb, rounded down.
+        compose.onNodeWithText("44%").assertIsDisplayed()
         compose.onNodeWithText("0%").assertDoesNotExist()
         val summary = context.resources.getQuantityString(R.plurals.mastery_summary, 17, 4, 17)
         compose.onNodeWithContentDescription(summary).assertIsDisplayed()
