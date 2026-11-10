@@ -94,6 +94,11 @@ data class MasteryOverview(
     val verbs: MasteryCounts = MasteryCounts(),
     /** Average [progress] of all trainable cards (forms and meaning), 0 to 1. */
     val progress: Double = 0.0,
+    /**
+     * New cards the next session adds to the due ones: limited by the session size, the daily
+     * limit and the new cards left (same filter as [dueNow]).
+     */
+    val newNow: Int = 0,
 )
 
 /**

@@ -5,6 +5,7 @@ import io.github.eleasarb.glagolik.domain.model.Exercise
 import io.github.eleasarb.glagolik.domain.model.FormKey
 import io.github.eleasarb.glagolik.domain.model.MasteryCounts
 import io.github.eleasarb.glagolik.domain.model.Tense
+import io.github.eleasarb.glagolik.domain.model.TrainingSettings
 import io.github.eleasarb.glagolik.domain.model.progress
 import io.github.eleasarb.glagolik.domain.srs.Rating
 import io.github.eleasarb.glagolik.testing.FakeProgressRepository
@@ -136,6 +137,42 @@ class ObserveMasteryUseCaseTest {
         val overview = useCase(NOW + Duration.ofMinutes(1))().first()
 
         assertEquals(1, overview.dueNow)
+    }
+
+    @Test
+    fun `new cards are limited by the daily limit and the session size`() = runTest {
+        progress.recordReview(formKey(1, FormKey.PAST_M), Rating.AGAIN, NOW)
+        val later = NOW + Duration.ofMinutes(1)
+
+        // 1 due, 4 unknown forms left; 10 a day, 1 used today.
+        assertEquals(4, useCase(later)().first().newNow)
+
+        settings.setNewCardsPerDay(3)
+        assertEquals(2, useCase(later)().first().newNow)
+
+        settings.replaceAll(TrainingSettings(newCardsPerDay = 10, sessionSize = 3))
+        assertEquals(2, useCase(later)().first().newNow)
+    }
+
+    @Test
+    fun `due and new cards add up to the next session`() = runTest {
+        val verbs = FakeVerbRepository(
+            verbs = MeaningCatalogTest.MEANING_VERBS,
+            trainable = forms,
+            partners = mapOf(1 to setOf(7)),
+        )
+        progress.recordReview(CardKey(1, Exercise.MeaningRuDe), Rating.AGAIN, NOW)
+        progress.recordReview(formKey(2, FormKey.PAST_M), Rating.AGAIN, NOW)
+        settings.replaceAll(TrainingSettings(newCardsPerDay = 6, tenses = setOf(Tense.PAST)))
+        val clock = Clock.fixed(NOW + Duration.ofMinutes(2), ZoneOffset.UTC)
+
+        val overview = ObserveMasteryUseCase(verbs, progress, settings, clock)().first()
+        val session =
+            BuildSessionUseCase(verbs, progress, settings, clock, kotlin.random.Random(1))()
+
+        assertEquals(2, overview.dueNow)
+        assertEquals(4, overview.newNow)
+        assertEquals(overview.dueNow + overview.newNow, session.cards.size)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

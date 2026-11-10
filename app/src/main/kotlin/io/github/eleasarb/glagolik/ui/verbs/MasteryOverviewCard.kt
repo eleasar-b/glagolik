@@ -45,6 +45,7 @@ fun MasteryOverviewCard(overview: MasteryOverview, modifier: Modifier = Modifier
         meaning = overview.meaning,
         dueNow = overview.dueNow,
         modifier = modifier,
+        newNow = overview.newNow,
         verbs = overview.verbs,
     ) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -71,6 +72,7 @@ fun ProgressCard(
     meaning: MasteryCounts?,
     dueNow: Int,
     modifier: Modifier = Modifier,
+    newNow: Int = 0,
     verbs: MasteryCounts? = null,
     footer: @Composable ColumnScope.() -> Unit = {},
 ) {
@@ -85,7 +87,7 @@ fun ProgressCard(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                 )
-                if (dueNow > 0) DueChip(dueNow = dueNow)
+                if (dueNow > 0 || newNow > 0) DueChip(dueNow = dueNow, newNow = newNow)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -121,11 +123,19 @@ fun ProgressCard(
 }
 
 /**
- * Due cards in the colour of "learning": they are what is being learned right now. Dark text,
- * which keeps its contrast on the orange of both themes.
+ * What the next session asks: "9 due · 1 new", parts that are 0 left out. In the colour of
+ * "learning": it is what is being learned right now. Dark text, which keeps its contrast on the
+ * orange of both themes.
  */
 @Composable
-private fun DueChip(dueNow: Int, modifier: Modifier = Modifier) {
+private fun DueChip(dueNow: Int, newNow: Int, modifier: Modifier = Modifier) {
+    val due = pluralStringResource(R.plurals.mastery_due, dueNow, dueNow)
+    val new = pluralStringResource(R.plurals.mastery_new_cards, newNow, newNow)
+    val text = when {
+        newNow == 0 -> due
+        dueNow == 0 -> new
+        else -> stringResource(R.string.mastery_due_and_new, due, new)
+    }
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.small,
@@ -133,7 +143,7 @@ private fun DueChip(dueNow: Int, modifier: Modifier = Modifier) {
         contentColor = ON_LEARNING,
     ) {
         Text(
-            text = pluralStringResource(R.plurals.mastery_due, dueNow, dueNow),
+            text = text,
             style = MaterialTheme.typography.labelLarge,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
         )
@@ -199,6 +209,7 @@ private fun MasteryOverviewCardPreview() {
                 forms = MasteryCounts(new = 9_412, learning = 23, young = 310, mature = 128),
                 byVerb = emptyMap(),
                 dueNow = 17,
+                newNow = 3,
                 meaning = MasteryCounts(new = 1_080, learning = 12, young = 60, mature = 48),
                 verbs = MasteryCounts(new = 559, learning = 38, young = 3),
                 progress = 0.012,

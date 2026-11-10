@@ -92,15 +92,30 @@ class VerbListScreenTest {
         meaning = MasteryCounts(new = 6, young = 1, mature = 1),
         verbs = MasteryCounts(new = 1, learning = 1),
         progress = 0.0123,
+        newNow = 2,
     )
 
     @Test
-    fun `no due chip when nothing is due`() {
-        show(VerbListUiState(verbs = verbs, isLoading = false, mastery = mastery.copy(dueNow = 0)))
+    fun `no chip when the next session would be empty`() {
+        val idle = mastery.copy(dueNow = 0, newNow = 0)
+        show(VerbListUiState(verbs = verbs, isLoading = false, mastery = idle))
 
-        val due = context.resources.getQuantityString(R.plurals.mastery_due, 0, 0)
-        compose.onNodeWithText(due).assertDoesNotExist()
+        compose.onNodeWithText("due", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("new", substring = true).assertDoesNotExist()
         compose.onNodeWithText(context.getString(R.string.mastery_title)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `chip shows due and new cards, leaving out what is zero`() {
+        show(VerbListUiState(verbs = verbs, isLoading = false, mastery = mastery))
+        compose.onNodeWithText("5 due · 2 new").assertIsDisplayed()
+    }
+
+    @Test
+    fun `chip shows only new cards when nothing is due`() {
+        val onlyNew = mastery.copy(dueNow = 0, newNow = 3)
+        show(VerbListUiState(verbs = verbs, isLoading = false, mastery = onlyNew))
+        compose.onNodeWithText("3 new").assertIsDisplayed()
     }
 
     @Test
@@ -108,9 +123,6 @@ class VerbListScreenTest {
         show(VerbListUiState(verbs = verbs, isLoading = false, mastery = mastery))
 
         compose.onNodeWithText(context.getString(R.string.mastery_title)).assertIsDisplayed()
-        compose.onNodeWithText(
-            context.resources.getQuantityString(R.plurals.mastery_due, 5, 5),
-        ).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.mastery_forms)).assertIsDisplayed()
         // Learned = learning + young + mature, rounded down.
         compose.onNodeWithText("9 of 39 learned · 23%").assertIsDisplayed()

@@ -28,8 +28,12 @@
     <string name="mastery_forms">Formen</string>
     <string name="mastery_meaning">Bedeutung</string>
     <plurals name="mastery_due">
-        <item quantity="one">%1$d jetzt fällig</item>
-        <item quantity="other">%1$d jetzt fällig</item>
+        <item quantity="one">%1$d fällig</item>
+        <item quantity="other">%1$d fällig</item>
+    </plurals>
+    <plurals name="mastery_new_cards">
+        <item quantity="one">%1$d neu</item>
+        <item quantity="other">%1$d neu</item>
     </plurals>
     <!-- %1$d: learned cards, %2$d: all cards, %3$s: share as percentage -->
     <plurals name="mastery_learned">

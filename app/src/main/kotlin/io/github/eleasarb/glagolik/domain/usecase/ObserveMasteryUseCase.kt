@@ -20,6 +20,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.transformLatest
 
@@ -55,12 +56,17 @@ class ObserveMasteryUseCase @Inject constructor(
                     .mapNotNull { cards[it]?.due }
                 while (true) {
                     val now = clock.instant()
-                    emit(overview(refs, cards, now, config))
-                    val next = dues.filter { it.isAfter(now) }.minOrNull() ?: break
+                    val introduced = progress.countIntroducedSince(startOfDay(now, clock.zone))
+                    emit(overview(refs, cards, now, config, introduced))
+                    // At midnight the daily limit for new cards starts again.
+                    val next = (dues + nextMidnight(now, clock.zone))
+                        .filter { it.isAfter(now) }
+                        .minOrNull() ?: break
                     // +1 ms: toMillis() truncates, the wait must not end just before `next`.
                     delay(Duration.between(now, next).toMillis() + 1)
                 }
             }
+            .distinctUntilChanged()
     }
 
     private data class Snapshot(
@@ -78,16 +84,18 @@ internal fun overview(
     cards: Map<CardKey, SrsCard>,
     now: Instant,
     config: TrainingSettings = TrainingSettings(),
+    introducedToday: Int = 0,
 ): MasteryOverview {
     fun counts(keys: List<CardKey>) = MasteryCounts.of(keys.map { cards[it].masteryLevel() })
     val all = refs.forms + refs.meaning
+    val trained = all.filter { config.trains(it.exercise) }
+    val due = trained.count { cards[it]?.due?.isAfter(now) == false }
     return MasteryOverview(
         forms = counts(refs.forms),
         byVerb = refs.forms.groupBy { it.verbId }.mapValues { (_, keys) -> counts(keys) },
-        // Same filter as the session: only cards it would ask.
-        dueNow = all.count { key ->
-            config.trains(key.exercise) && cards[key]?.due?.isAfter(now) == false
-        },
+        // Same filter and limits as the session: only cards it would ask.
+        dueNow = due,
+        newNow = minOf(config.newSlots(due, introducedToday), trained.count { it !in cards }),
         meaning = counts(refs.meaning),
         verbs = MasteryCounts.of(
             all.groupBy { it.verbId }.values.map { keys ->
